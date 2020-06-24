@@ -1,14 +1,20 @@
 def go_modules(name:str):
-    vendor = build_rule(
+    gomod = filegroup(
+        name = "_gomod",
+        srcs = ["go.mod", "go.sum"],
+    )
+
+    download = build_rule(
         name = name,
         tag = "download",
-        srcs = ["go.mod", "go.sum"],
+        srcs = [gomod],
         cmd = ' && '.join([
             "ls -lah",
             f"TMPDIR=/tmp $TOOLS mod download -x 2>&1",
             "chmod -R 0755 $TMP_DIR/go",
+            "mv $TMP_DIR/go/pkg/mod $OUT",
         ]),
-        output_dirs = ["go"],
+        outs = ["modcache"],
         tools = [CONFIG.GO_TOOL],
     )
 
@@ -21,8 +27,7 @@ def go_modules(name:str):
 
             add_exported_dep(name, auto_go_library(
                 name = parts[0],
-                srcs = ["go.mod", "go.sum"],
-                deps = [vendor],
+                deps = [download, gomod],
             ))
 
     return build_rule(
@@ -31,32 +36,54 @@ def go_modules(name:str):
         cmd = 'TMPDIR=/tmp go list -m -mod=readonly all | grep -v "github.com/sagikazarmark/please-go-modules"',
         tools = [CONFIG.GO_TOOL],
         post_build=create_go_deps,
-        deps = [vendor],
+        deps = [download],
         output_is_complete = False,
         visibility = ["PUBLIC"],
     )
 
-def auto_go_library(name:str, srcs:list, deps:list):
+def auto_go_library(name:str, deps:list):
+    _name = name.replace("/", "__")
+
+    version = build_rule(
+        name = _name,
+        tag = "version",
+        srcs = ["go.mod", "go.sum"],
+        outs = [f"gomodversions/{name}/version"],
+        cmd = ' && '.join([
+            "mkdir -p go/pkg",
+            "mv modcache go/pkg/mod",
+            f"TMPDIR=/tmp go list -m -mod=readonly all | grep {name} | cut -d ' ' -f 2 > $OUT",
+        ]),
+        tools = {
+            'go': [CONFIG.GO_TOOL],
+        },
+        deps = deps,
+        requires = ['go', 'go_src'],
+        #needs_transitive_deps = True,
+        visibility = ["PUBLIC"],
+    )
+
     lib = name.rpartition("/")[2]
     output = f'pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{name}/{lib}.a'
 
     return build_rule(
-        name = name.replace("/", "__"),
+        name = _name,
+        srcs = [version],
         outs = [output],
-        srcs = srcs+glob(["pkg/mod/"+name+"/**"]),
         tools = {
             'go': [CONFIG.GO_TOOL],
         },
         deps = deps,
         building_description = 'Compiling...',
-        #cmd = f"pwd && sleep 30 && TMPDIR=/tmp $TOOLS_GO build -v -mod=vendor -o {output} {name}/...",
         cmd = ' && '.join([
-            "mkdir -p go",
-            "cp -r pkg go/",
+            "mkdir -p go/pkg",
+            "mv modcache go/pkg/mod",
+            #"pwd && sleep 30",
             f"TMPDIR=/tmp $TOOLS_GO build -v -mod=readonly -o {output} {name}/...",
         ]),
         requires = ['go', 'go_src'],
-        needs_transitive_deps = True,
+        #needs_transitive_deps = True,
+        visibility = ["PUBLIC"],
     )
 
 
