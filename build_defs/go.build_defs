@@ -1,0 +1,192 @@
+def go_modules(name:str):
+    vendor = build_rule(
+        name = name,
+        tag = "download",
+        srcs = ["go.mod", "go.sum"],
+        cmd = ' && '.join([
+            "ls -lah",
+            f"TMPDIR=/tmp $TOOLS mod download -x 2>&1",
+            "chmod -R 0755 $TMP_DIR/go",
+        ]),
+        output_dirs = ["go"],
+        tools = [CONFIG.GO_TOOL],
+    )
+
+    def create_go_deps(_, output):
+        for line in output:
+            parts = line.split(' ')
+
+            log.info(parts)
+            log.info(parts[0])
+
+            add_exported_dep(name, auto_go_library(
+                name = parts[0],
+                srcs = ["go.mod", "go.sum"],
+                deps = [vendor],
+            ))
+
+    return build_rule(
+        name = name,
+        srcs = ["go.mod", "go.sum"],
+        cmd = 'TMPDIR=/tmp go list -m -mod=readonly all | grep -v "github.com/sagikazarmark/please-go-modules"',
+        tools = [CONFIG.GO_TOOL],
+        post_build=create_go_deps,
+        deps = [vendor],
+        output_is_complete = False,
+        visibility = ["PUBLIC"],
+    )
+
+def auto_go_library(name:str, srcs:list, deps:list):
+    lib = name.rpartition("/")[2]
+    output = f'pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{name}/{lib}.a'
+
+    return build_rule(
+        name = name.replace("/", "__"),
+        outs = [output],
+        srcs = srcs+glob(["pkg/mod/"+name+"/**"]),
+        tools = {
+            'go': [CONFIG.GO_TOOL],
+        },
+        deps = deps,
+        building_description = 'Compiling...',
+        #cmd = f"pwd && sleep 30 && TMPDIR=/tmp $TOOLS_GO build -v -mod=vendor -o {output} {name}/...",
+        cmd = ' && '.join([
+            "mkdir -p go",
+            "cp -r pkg go/",
+            f"TMPDIR=/tmp $TOOLS_GO build -v -mod=readonly -o {output} {name}/...",
+        ]),
+        requires = ['go', 'go_src'],
+        needs_transitive_deps = True,
+    )
+
+
+########################
+
+def go_module(name:str, modfile:str = "go.mod"):
+    return build_rule(
+        name = name,
+        srcs = glob(["**/*"], exclude = [".git/**", "plz-out/**", modfile, modfile.replace(".mod", ".sum")]) + [modfile, modfile.replace(".mod", ".sum")],
+        #cmd = f"export TMPDIR=$TMPDIR/tmp; mkdir -p $TMPDIR && $TOOLS mod vendor -modfile={modfile} -v && mv vendor $OUT",
+        cmd = ' && '.join([
+            #"pwd && sleep 30",
+            "ls -lah",
+            "mkdir -p module",
+            "for src in $SRCS; do mkdir -p module/$(dirname $src); mv $src module/$src; done",
+            "cd module",
+            #f"TMPDIR=/tmp $TOOLS mod vendor -modfile={modfile} -v 2>&1",
+            f"TMPDIR=/tmp $TOOLS mod vendor -modfile={modfile} -v 2>&1 && echo $OUT && mv vendor $OUT",
+            "chmod -R 0755 $TMP_DIR/go",
+        ]),
+        outs = ["vendor"],
+        #output_dirs = ["vendor"],
+        tools = [CONFIG.GO_TOOL],
+    )
+
+def go_modules2(name:str, modfile:str = "go.mod"):
+    #vendor = go_module(name = name+'vendor', modfile = modfile)
+    vendor = build_rule(
+        name = name,
+        tag = "vendor",
+        srcs = glob(["**/*"], exclude = [".git/**", "plz-out/**", modfile, modfile.replace(".mod", ".sum")]) + [modfile, modfile.replace(".mod", ".sum")],
+        cmd = ' && '.join([
+            #"pwd && sleep 30",
+            "ls -lah",
+            "mkdir -p module",
+            "for src in $SRCS; do mkdir -p module/$(dirname $src); mv $src module/$src; done",
+            "cd module",
+            #f"TMPDIR=/tmp $TOOLS mod vendor -modfile={modfile} -v 2>&1",
+            f"TMPDIR=/tmp $TOOLS mod vendor -modfile={modfile} -v 2>&1 && echo $OUT && mv vendor $OUT",
+            "chmod -R 0755 $TMP_DIR/go",
+        ]),
+        outs = ["vendor"],
+        tools = [CONFIG.GO_TOOL],
+    )
+
+    def create_go_deps(_, output):
+        for line in output:
+            if not (line and line.startswith("# ")):
+                continue
+            
+            parts = line.lstrip("# ").split(' ')
+
+            log.info(parts)
+            log.info(parts[0])
+
+            #add_out(name, auto_go_library(
+            #    name = parts[0],
+            #    deps = [':'+name],
+            #))
+
+            add_exported_dep(name, auto_go_library(
+                name = parts[0],
+                srcs = [modfile, modfile.replace(".mod", ".sum")],
+                deps = [vendor],
+            ))
+
+            #auto_go_library(
+            #    name = parts[0],
+            #    deps = [':'+name],
+            #)
+
+            #add_out(name, "lib.a")
+
+    return build_rule(
+        name = name,
+        #srcs = ["vendor/modules.txt"],
+        srcs = glob(["**/*"], exclude = [".git/**", "plz-out/**", modfile, modfile.replace(".mod", ".sum")]) + [modfile, modfile.replace(".mod", ".sum")],
+        #cmd = f"export TMPDIR=$TMPDIR/tmp; mkdir -p $TMPDIR && $TOOLS mod vendor -modfile={modfile} -v && mv vendor $OUT",
+        cmd = 'cat vendor/modules.txt',
+        tools = [CONFIG.GO_TOOL],
+        post_build=create_go_deps,
+        deps = [vendor],
+        output_is_complete = False,
+    )
+
+def auto_go_library2(name:str, srcs:list, deps:list):
+    lib = name.rpartition("/")[2]
+    output = f'pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{name}/{lib}.a'
+
+    return build_rule(
+        name = name.replace("/", "__"),
+        outs = [output],
+        srcs = srcs+glob(["vendor/"+name+"/**"]),
+        tools = {
+            'go': [CONFIG.GO_TOOL],
+        },
+        deps = deps,
+        building_description = 'Compiling...',
+        #cmd = f"pwd && sleep 30 && TMPDIR=/tmp $TOOLS_GO build -v -mod=vendor -o {output} {name}/...",
+        cmd = f"TMPDIR=/tmp $TOOLS_GO build -v -mod=vendor -o {output} {name}/...",
+        requires = ['go', 'go_src'],
+        needs_transitive_deps = True,
+    )
+
+
+def go_module2(name:str, modfile:str = "go.mod"):
+    def create_go_deps(_, output):
+        for line in output:
+            if not (line and line.startswith("# ")):
+                continue
+            
+            parts = line.lstrip("# ").split(' ')
+
+            log.info(parts)
+            log.info(parts[0])
+
+    return build_rule(
+        name = name,
+        srcs = glob(["**/*"], exclude = [".git/**", "plz-out/**", modfile, modfile.replace(".mod", ".sum")]) + [modfile, modfile.replace(".mod", ".sum")],
+        #cmd = f"export TMPDIR=$TMPDIR/tmp; mkdir -p $TMPDIR && $TOOLS mod vendor -modfile={modfile} -v && mv vendor $OUT",
+        cmd = ' && '.join([
+            "mkdir -p module",
+            "for src in $SRCS; do mkdir -p module/$(dirname $src); mv $src module/$src; done",
+            "cd module",
+            #f"TMPDIR=/tmp $TOOLS mod vendor -modfile={modfile} -v 2>&1",
+            f"TMPDIR=/tmp $TOOLS mod vendor -modfile={modfile} -v 2>&1 && echo $OUT && mv vendor $OUT",
+            "chmod -R 0755 $TMP_DIR/go",
+        ]),
+        outs = ["vendor2"],
+        #output_dirs = ["vendor"],
+        tools = [CONFIG.GO_TOOL],
+        post_build=create_go_deps,
+    )
