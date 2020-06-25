@@ -25,6 +25,11 @@ def go_modules(name:str):
             log.info(parts)
             log.info(parts[0])
 
+            #auto_go_library(
+            #    name = parts[0],
+            #    deps = [download, gomod],
+            #)
+
             add_exported_dep(name, auto_go_library(
                 name = parts[0],
                 deps = [download, gomod],
@@ -44,31 +49,12 @@ def go_modules(name:str):
 def auto_go_library(name:str, deps:list):
     _name = name.replace("/", "__")
 
-    version = build_rule(
-        name = _name,
-        tag = "version",
-        srcs = ["go.mod", "go.sum"],
-        outs = [f"gomodversions/{name}/version"],
-        cmd = ' && '.join([
-            "mkdir -p go/pkg",
-            "mv modcache go/pkg/mod",
-            f"TMPDIR=/tmp go list -m -mod=readonly all | grep {name} | cut -d ' ' -f 2 > $OUT",
-        ]),
-        tools = {
-            'go': [CONFIG.GO_TOOL],
-        },
-        deps = deps,
-        requires = ['go', 'go_src'],
-        #needs_transitive_deps = True,
-        visibility = ["PUBLIC"],
-    )
-
     lib = name.rpartition("/")[2]
     output = f'pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{name}/{lib}.a'
 
     return build_rule(
         name = _name,
-        srcs = [version],
+        srcs = ["go.mod", "go.sum"],
         outs = [output],
         tools = {
             'go': [CONFIG.GO_TOOL],
