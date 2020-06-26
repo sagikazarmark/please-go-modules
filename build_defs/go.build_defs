@@ -37,6 +37,12 @@ def go_module(name:str, install:list, modfile:str = "go.mod"):
 
     return filegroup(name = name, srcs = packages)
 
+def go_mod_dep(mod:str, package:str):
+    pkg, name = decompose(mod)
+    label = package_to_label(name, package)
+
+    return f"//{pkg}:{label}"
+
 def package_to_label(name: str, package: str) -> str:
     package = package.replace("/", "_")
     return f"_{name}#install_{package}"
