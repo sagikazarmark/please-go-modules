@@ -28,7 +28,7 @@ def go_module(name:str, install:list, modfile:str = "go.mod"):
                     "mkdir -p tmp",
                     "export TMPDIR=$TMP_DIR/tmp",
                     f"mkdir -p {output_dir}",
-                    f"$TOOLS build -mod=readonly -v -o {output} {package}",
+                    f"$TOOLS build -trimpath -mod=readonly -v -o {output} {package}",
                 ]),
                 tools = [CONFIG.GO_TOOL],
                 visibility = ["PUBLIC"],
