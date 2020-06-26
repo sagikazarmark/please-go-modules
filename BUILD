@@ -1,5 +1,3 @@
-subinclude("//build_defs")
-
 go_module(
     name = "module",
     install = [
