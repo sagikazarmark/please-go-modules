@@ -1,6 +1,6 @@
 go_library(
     name = "lib",
     srcs = ["lib.go"],
-    deps = ["//:gomod"],
+    deps = ["//:_module#install_github.com_pkg_errors"],
     visibility = ["PUBLIC"],
 )
