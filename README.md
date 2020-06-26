@@ -6,25 +6,32 @@ Experiments with [Please](https://please.build) and Go modules.
 ## Usage
 
 ```
-./pleasew build --rebuild //:bin -v debug --show_all_output
-./pleasew run //:bin -v debug --show_all_output
+# Build the binary with all the dependencies
+./pleasew build //:bin
+
+# Run the binary
+./pleasew run //:bin
+
+# For more details
+./pleasew build //:bin --rebuild -v debug --show_all_output
 ```
 
 
-**Note:** on the first run it fails (probably because I don't know please very well yet):
+## Current approach
 
-```
-Build stopped after 1.52s. 1 target failed:
-    //:gomod
-Attempting to record rule hash: cannot calculate hash for plz-out/gen/pkg/darwin_amd64/github.com/pkg/errors/errors.a: file does not exist
-```
+The `go_module` rule downloads all dependencies using `go mod download`,
+generates a rule for each package (passed to the same rule) which builds those packages.
+
+The generated rules can be referenced by `go_library` and `go_binary` rules.
+
+The name format is `_{module}#install_{package_name}` where slashes in the package name is replaced with underscores.
+
+See details in the source files.
 
 
-## Notes
+## Notes / Questions
 
-- This is probably a great example of what should never go into production!
-- It used `go mod vendor` before, but it turned out to be a dead end: it requires all the source files in the tree and will only work with Go 1.15
-- It uses `go mod download` and outputs the `pkg` directory from GOPATH...don't know if it's a good idea or not
-- Currently still requires dependencies to be manually listed
-- How automatically creating targets that can be referenced by other targets is still a mystery to me
-
+- The package build rule output might collide with other build rules?
+- How to handle transitive dependencies?
+- How about the generated rule name scheme?
+- Can the package list be generated? (related to transitive dependencies)
