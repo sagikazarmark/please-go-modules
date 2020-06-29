@@ -1,5 +1,6 @@
 [parse]
-preloadbuilddefs = build_defs/go.build_defs
+preloadbuilddefs = build_defs/go_module.build_defs
+preloadbuilddefs = build_defs/go_get.build_defs
 
 [go]
 importpath = github.com/sagikazarmark/please-go-modules

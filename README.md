@@ -16,25 +16,31 @@ Experiments with [Please](https://please.build) and Go modules.
 ./pleasew build //:bin --rebuild -v debug --show_all_output
 ```
 
+In order to use the `go_getx` rule in a new project copy the `build_defs` directory,
+preload the build definitions in it and follwo these commands:
 
-## Current approach
+```bash
+# This is necessary because Go filter expressions take plz-out into account and can mess with the following commands
+mkdir -p plz-out
+cd plz-out
+go mod init plz-out
+cd -
 
-The `go_module` rule downloads all dependencies using `go mod download`,
-generates a rule for each package (passed to the same rule) which builds those packages.
+# This command generates basic go_getx rules for you
+# It is VERY-VERY FAR from ideal (take a look at BUILD in this repo for manual edits)
+go list -m -mod=readonly all | while read mod; do cat go.sum | grep "$mod " | xargs bash -c 'NAME=$(echo $0 | sed "s|\/|_|g") && echo -e "go_getx(\n    name=\"$NAME\",\n    get=\"$0\",\n    version=\"$1\",\n    sum=\"$2\",\n    visibility=[\"PUBLIC\"],\n)"'; done
 
-The generated rules can be referenced by `go_library` and `go_binary` rules.
+# Generate a list of dependencies
+go list -m -mod=readonly all | while read mod; do cat go.sum | grep "$mod " | cut -d ' ' -f1 | sed 's/.*/":&",/; s|\/|_|g'; done
+```
 
-The name format is `_{module}#install_{package_name}` where slashes in the package name is replaced with underscores.
-
-See details in the source files.
+Ideally, the above lines should be replaced by a code generator that generates third-party `go_get`s for you, resolving transparent dependencies.
+One such tool could be [wollemi](https://github.com/tcncloud/wollemi), but it's still in early development.
 
 
 ## Notes / Questions
 
-- The package build rule output might collide with other build rules?
-- How to handle transitive dependencies?
-- How about the generated rule name scheme?
-- Can the package list be generated? (related to transitive dependencies)
+- The initial `go_get` for fetch_rule is **really** slow. Why?
 
 
 ## Change log
@@ -42,8 +48,21 @@ See details in the source files.
 This experiment went through a couple versions, hit a few dead ends.
 Every major turn should be documented here so in the future we know how and why decisions have been made.
 
+
 ## Latest revision - 2020-06-29
 
+Using the Go tooling for downloading turned out to be a dead end,
+because in module mode object files can only be built and saved for direct dependencies, but not transitive ones.
+(Chances are this is not true, but I couldn't find the right solution)
+
+After looking at [Gazelle](https://github.com/bazelbuild/bazel-gazelle), it turns out that they don't use go modules for package management either.
+This is kind of understandable, since go modules break the incremental build idea behind Bazel/Please (every change to `go.mod` would result it massive rebuilds).
+
+Gazelle actually uses a small tool, called [fetch_repo](https://github.com/bazelbuild/bazel-gazelle/tree/5c00b77/cmd/fetch_repo) to download packages.
+It supports regular `go get` mode (and more) and works with modules as well. It uses a little trick to do that: it creates a temporary module and downloads the package using `go mod download`.
+
+I was able to integrate this tool into the existing `go_get` rule with a few changes. The working title is `go_getx`.
+If this tool gets integrated into the upstream `go_get` rule, it might worth checking if it can replace the rest of the current download logic.
 
 
 ## First few revisions - 2020 June
