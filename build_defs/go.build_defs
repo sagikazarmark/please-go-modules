@@ -1,8 +1,14 @@
 def go_module(name:str, install:list, modfile:str = "go.mod"):
+    gomod = filegroup(
+        name = name,
+        tag = "modfile",
+        srcs = [modfile, modfile.replace(".mod", ".sum")]
+    )
+
     modcache = build_rule(
         name = name,
         tag = "modcache",
-        srcs = [modfile, modfile.replace(".mod", ".sum")],
+        srcs = [gomod],
         outs = ["go/pkg/mod"],
         cmd = ' && '.join([
             "mkdir -p tmp",
@@ -22,7 +28,7 @@ def go_module(name:str, install:list, modfile:str = "go.mod"):
         packages += [
             build_rule(
                 name = package_to_label(name, package),
-                srcs = [modcache],
+                srcs = [modcache, gomod],
                 outs = [output],
                 cmd = ' && '.join([
                     "mkdir -p tmp",
