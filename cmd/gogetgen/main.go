@@ -40,6 +40,7 @@ func main() {
 
 	packages := make(map[string]Package)
 	modules := make(map[string]*ModuleRoot)
+	var moduleKeys []string
 	pkgToModule := make(map[string]string)
 
 	for err != io.EOF {
@@ -70,6 +71,7 @@ func main() {
 
 		moduleRoot, ok := modules[pkg.Module.Path]
 		if !ok {
+			moduleKeys = append(moduleKeys, pkg.Module.Path)
 			moduleRoot = new(ModuleRoot)
 
 			moduleRoot.Module = pkg.Module
@@ -118,7 +120,9 @@ func main() {
 		moduleRoot.Sum = sum
 	}
 
-	for _, module := range modules {
+	for _, modulePath := range moduleKeys {
+		module := modules[modulePath]
+		
 		var install []string
 		depList := make(map[string]bool)
 
