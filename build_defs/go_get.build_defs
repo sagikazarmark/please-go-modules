@@ -141,7 +141,7 @@ def _go_get_download(name:str, tag:str, get:str, repo:str='', patch:str=None, ha
     }
 
     if version:
-        tools['fetch_repo'] = ["//build_defs/fetch_repo"]
+        tools['fetch_repo'] = ["//cmd/fetch_repo"]
 
         get_deps = []
 
