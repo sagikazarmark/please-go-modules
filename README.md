@@ -16,8 +16,8 @@ Experiments with [Please](https://please.build) and Go modules.
 ./pleasew build //:bin --rebuild -v debug --show_all_output
 ```
 
-In order to use the `go_getx` rule in a new project copy the `build_defs` directory,
-preload the build definitions in it and follwo these commands:
+In order to use the `go_getx` rule in a new project copy the `build_defs` and `cmd` directories,
+preload the build definitions and follow these commands:
 
 ```bash
 # This is necessary because Go filter expressions take plz-out into account and can mess with the following commands
@@ -26,16 +26,12 @@ cd plz-out
 go mod init plz-out
 cd -
 
-# This command generates basic go_getx rules for you
-# It is VERY-VERY FAR from ideal (take a look at BUILD in this repo for manual edits)
-go list -m -mod=readonly all | while read mod; do cat go.sum | grep "$mod " | xargs bash -c 'NAME=$(echo $0 | sed "s|\/|_|g") && echo -e "go_getx(\n    name=\"$NAME\",\n    get=\"$0\",\n    version=\"$1\",\n    sum=\"$2\",\n    visibility=[\"PUBLIC\"],\n)"'; done
-
-# Generate a list of dependencies
-go list -m -mod=readonly all | while read mod; do cat go.sum | grep "$mod " | cut -d ' ' -f1 | sed 's/.*/":&",/; s|\/|_|g'; done
+# Copy the output to your build file
+plz run //cmd/gogetgen
 ```
 
-Ideally, the above lines should be replaced by a code generator that generates third-party `go_get`s for you, resolving transparent dependencies.
-One such tool could be [wollemi](https://github.com/tcncloud/wollemi), but it's still in early development.
+This is just a prototype, but can serve as the basis for a future generator.
+There is also [wollemi](https://github.com/tcncloud/wollemi), but it's still in early development.
 
 
 ## Notes / Questions
