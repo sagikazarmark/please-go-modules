@@ -39,6 +39,8 @@ There is also [wollemi](https://github.com/tcncloud/wollemi), but it's still in 
 - The initial `go_get` for fetch_rule is **really** slow. Why?
 - `go_getx` needs replace support
 - The generator needs replace support
+- Add support for test dependencies
+- Generate rules in separate files under `vendor` and/or `third_party/go` directory
 
 
 ## Change log
