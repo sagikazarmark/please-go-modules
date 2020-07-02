@@ -41,6 +41,7 @@ There is also [wollemi](https://github.com/tcncloud/wollemi), but it's still in 
 - The generator needs replace support
 - Add support for test dependencies
 - Generate rules in separate files under `vendor` and/or `third_party/go` directory
+- Remove circular dependencies (eg. packages referencing themselves)
 
 
 ## Change log
