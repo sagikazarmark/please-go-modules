@@ -122,7 +122,7 @@ func main() {
 
 	for _, modulePath := range moduleKeys {
 		module := modules[modulePath]
-		
+
 		var install []string
 		depList := make(map[string]bool)
 
