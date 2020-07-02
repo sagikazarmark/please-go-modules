@@ -37,6 +37,8 @@ There is also [wollemi](https://github.com/tcncloud/wollemi), but it's still in 
 ## Notes / Questions
 
 - The initial `go_get` for fetch_rule is **really** slow. Why?
+- `go_getx` needs replace support
+- The generator needs replace support
 
 
 ## Change log
