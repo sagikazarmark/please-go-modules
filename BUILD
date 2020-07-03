@@ -25,7 +25,7 @@ go_binary(
     ],
 )
 
-go_getx(
+go_module_get(
     name = "github.com_sirupsen_logrus",
     get = "github.com/sirupsen/logrus",
     version = "v1.6.0",
@@ -35,7 +35,7 @@ go_getx(
     visibility=["PUBLIC"],
 )
 
-go_getx(
+go_module_get(
     name = "logur.dev_logur",
     get = "logur.dev/logur",
     version = "v0.16.2",
@@ -45,7 +45,7 @@ go_getx(
     visibility=["PUBLIC"],
 )
 
-go_getx(
+go_module_get(
     name = "logur.dev_adapter_logrus",
     get = "logur.dev/adapter/logrus",
     version = "v0.5.0",
@@ -55,7 +55,7 @@ go_getx(
     visibility=["PUBLIC"],
 )
 
-go_getx(
+go_module_get(
     name = "golang.org_x_tools",
     get = "golang.org/x/tools",
     version = "v0.0.0-20200626171337-aa94e735be7f",
@@ -65,7 +65,7 @@ go_getx(
     visibility=["PUBLIC"],
 )
 
-go_getx(
+go_module_get(
     name = "github.com_pkg_errors",
     get = "github.com/pkg/errors",
     version = "v0.9.1",
@@ -75,7 +75,7 @@ go_getx(
     visibility=["PUBLIC"],
 )
 
-go_getx(
+go_module_get(
     name = "golang.org_x_sys",
     get = "golang.org/x/sys",
     version = "v0.0.0-20190422165155-953cdadca894",

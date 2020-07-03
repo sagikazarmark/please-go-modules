@@ -1,4 +1,4 @@
-def go_getx(name:str, get:str|list, repo:str='', deps:list=[], exported_deps:list=None,
+def go_module_get(name:str, get:str|list, repo:str='', deps:list=[], exported_deps:list=None,
            visibility:list=None, patch:str=None, binary:bool=False, test_only:bool&testonly=False,
            install:list=None, revision:str|list=None, version:str|list=None, sum:str|list=None, strip:list=None, hashes:list=None,
            extra_outs:list=[], licences:list=None):

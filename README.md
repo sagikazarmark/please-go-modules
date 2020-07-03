@@ -16,7 +16,7 @@ Experiments with [Please](https://please.build) and Go modules.
 ./pleasew build //:bin --rebuild -v debug --show_all_output
 ```
 
-In order to use the `go_getx` rule in a new project copy the `build_defs` and `cmd` directories,
+In order to use the `go_module_get` rule in a new project copy the `build_defs` and `cmd` directories,
 preload the build definitions and follow these commands:
 
 ```bash
@@ -37,7 +37,7 @@ There is also [wollemi](https://github.com/tcncloud/wollemi), but it's still in 
 ## Notes / Questions
 
 - The initial `go_get` for fetch_rule is **really** slow. Why?
-- `go_getx` needs replace support
+- `go_module_get` needs replace support
 - The generator needs replace support
 - Add support for test dependencies
 - Generate rules in separate files under `vendor` and/or `third_party/go` directory
@@ -62,7 +62,7 @@ This is kind of understandable, since go modules break the incremental build ide
 Gazelle actually uses a small tool, called [fetch_repo](https://github.com/bazelbuild/bazel-gazelle/tree/5c00b77/cmd/fetch_repo) to download packages.
 It supports regular `go get` mode (and more) and works with modules as well. It uses a little trick to do that: it creates a temporary module and downloads the package using `go mod download`.
 
-I was able to integrate this tool into the existing `go_get` rule with a few changes. The working title is `go_getx`.
+I was able to integrate this tool into the existing `go_get` rule with a few changes. The working title is `go_module_get`.
 If this tool gets integrated into the upstream `go_get` rule, it might worth checking if it can replace the rest of the current download logic.
 
 

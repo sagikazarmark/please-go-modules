@@ -145,7 +145,7 @@ func main() {
 			deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(dep, "/", "_", -1)))
 		}
 
-		fmt.Printf(`go_getx(
+		fmt.Printf(`go_module_get(
 	name = "%s",
 	get = "%s",
 	version = "%s",
