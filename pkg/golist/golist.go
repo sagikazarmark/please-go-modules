@@ -1,6 +1,11 @@
-package main
+package golist
 
-import "time"
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"time"
+)
 
 type Package struct {
 	Dir           string   // directory containing package sources
@@ -84,4 +89,52 @@ type Module struct {
 
 type ModuleError struct {
 	Err string // the error itself
+}
+
+// ParsePackages parses data into a package list.
+func ParsePackages(data []byte) ([]Package, error) {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+
+	var pkgs []Package
+
+	for {
+		var pkg Package
+
+		err := decoder.Decode(&pkg)
+		if err == io.EOF { // no more packages
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		pkgs = append(pkgs, pkg)
+	}
+
+	return pkgs, nil
+}
+
+// ParseModules parses data into a module list.
+func ParseModules(data []byte) ([]Module, error) {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+
+	var modules []Module
+
+	for {
+		var module Module
+
+		err := decoder.Decode(&module)
+		if err == io.EOF { // no more modules
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		modules = append(modules, module)
+	}
+
+	return modules, nil
 }
