@@ -5,17 +5,6 @@ Experiments with [Please](https://please.build) and Go modules.
 
 ## Usage
 
-```
-# Build the binary with all the dependencies
-./pleasew build //:bin
-
-# Run the binary
-./pleasew run //:bin
-
-# For more details
-./pleasew build //:bin --rebuild -v debug --show_all_output
-```
-
 In order to use the `go_module_get` rule in a new project copy the `build_defs` and `cmd` directories,
 preload the build definitions and follow these commands:
 

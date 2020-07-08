@@ -1,23 +1,8 @@
-#go_module(
-#    name = "module",
-#    install = [
-#        "github.com/pkg/errors",
-#        "logur.dev/logur",
-#        "logur.dev/logur/logtesting",
-#        "logur.dev/logur/conformance",
-#    ],
-#)
-
 go_binary(
-    name = "bin",
+    name = "example",
     srcs = ["main.go"],
     deps = [
-        "//lib",
-        #go_mod_dep(":module", "github.com/pkg/errors"),
-        #go_mod_dep(":module", "logur.dev/logur"),
-        #go_mod_dep(":module", "logur.dev/logur/logtesting"),
-        #go_mod_dep(":module", "logur.dev/logur/conformance"),
-
+        "//example/lib",
         ":github.com_pkg_errors",
         ":github.com_sirupsen_logrus",
         ":logur.dev_adapter_logrus",

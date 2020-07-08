@@ -2,4 +2,5 @@
 plz-out
 .plzconfig.local
 
-bin/
+/bin/
+/.idea/

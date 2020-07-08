@@ -8,7 +8,7 @@ import (
 	logrusadapter "logur.dev/adapter/logrus"
 	"logur.dev/logur"
 
-	"github.com/sagikazarmark/please-go-modules/lib"
+	"github.com/sagikazarmark/please-go-modules/example/lib"
 )
 
 var _ = errors.New("")
