@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/bazelbuild/buildtools/build"
+
 	"github.com/sagikazarmark/please-go-modules/pkg/golist"
 	"github.com/sagikazarmark/please-go-modules/pkg/modgraph"
 	"github.com/sagikazarmark/please-go-modules/pkg/sumfile"
@@ -83,7 +85,7 @@ func main() {
 
 			file, ok := files[filePath]
 			if !ok {
-				file = `package(default_visibility=["PUBLIC"])`+"\n\n"
+				file = `package(default_visibility = ["PUBLIC"])` + "\n\n"
 				filePaths = append(filePaths, filePath)
 			}
 
@@ -163,7 +165,12 @@ func main() {
 					panic(err)
 				}
 
-				_, err = file.WriteString(files[filePath])
+				buildFile, err := build.ParseBuild("BUILD", []byte(files[filePath]))
+				if err != nil {
+					panic(err)
+				}
+
+				_, err = file.Write(build.Format(buildFile))
 				if err != nil {
 					panic(err)
 				}

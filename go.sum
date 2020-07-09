@@ -1,3 +1,5 @@
+github.com/bazelbuild/buildtools v0.0.0-20200623222341-ce0cf814cb03 h1:LRSVAUotW3P6B9fWl+r7qTBE7IUMKyn+YvtmSE1L5DM=
+github.com/bazelbuild/buildtools v0.0.0-20200623222341-ce0cf814cb03/go.mod h1:5JP0TXzWDHXv8qvxRC4InIazwdyDseBDbzESUMKk1yU=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
