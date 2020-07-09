@@ -5,7 +5,7 @@ Experiments with [Please](https://please.build) and Go modules.
 
 ## Usage
 
-In order to use the `go_module_get` rule in a new project copy the `build_defs` and `cmd` directories,
+In order to use the `go_get` rule in a new project copy the `build_defs` and `cmd` directories,
 preload the build definitions and follow these commands:
 
 ```bash
@@ -26,7 +26,7 @@ There is also [wollemi](https://github.com/tcncloud/wollemi), but it's still in 
 ## Notes / Questions
 
 - The initial `go_get` for fetch_rule is **really** slow. Why?
-- `go_module_get` needs replace support
+- `go_get` needs replace support
 - The generator needs replace support
 - Add support for test dependencies
 - Generate rules in separate files under `vendor` and/or `third_party/go` directory

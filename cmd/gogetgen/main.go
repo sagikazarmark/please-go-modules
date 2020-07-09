@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/sagikazarmark/please-go-modules/pkg/golist"
@@ -17,6 +18,7 @@ import (
 var (
 	stdout = flag.Bool("stdout", false, "Dump rules to the standard output")
 	dir    = flag.String("dir", "", "Dump rules into a directory")
+	dryRun = flag.Bool("dry-run", false, "Do not write anything to file")
 	clean  = flag.Bool("clean", false, "Clean target before generating new rules")
 )
 
@@ -55,14 +57,14 @@ func main() {
 				deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(dep, "/", "_", -1)))
 			}
 
-			fmt.Printf(`go_module_get(
-	name = "%s",
-	get = "%s",
-	version = "%s",
-	sum = "%s",
-	install = [%s],
-	deps = [%s],
-	visibility=["PUBLIC"],
+			fmt.Printf(`go_get(
+    name = "%s",
+    get = "%s",
+    version = "%s",
+    sum = "%s",
+    install = [%s],
+    deps = [%s],
+    visibility=["PUBLIC"],
 )`+"\n\n",
 				strings.Replace(module.Module.Path, "/", "_", -1),
 				module.Module.Path,
@@ -73,25 +75,18 @@ func main() {
 			)
 		}
 	} else if *dir != "" {
-		if filepath.IsAbs(*dir) {
-			log.Fatal("Absolute path not allowed")
-		}
-
-		// TODO: disable every path outside of the module root
-
-		if *clean {
-			err := os.RemoveAll(*dir)
-			if err != nil {
-				panic(err)
-			}
-		}
-
-		err := os.MkdirAll(*dir, 0755)
-		if err != nil {
-			panic(err)
-		}
+		files := make(map[string]string)
+		var filePaths []string
 
 		for _, module := range moduleList {
+			filePath := path.Dir(module.Module.Path)
+
+			file, ok := files[filePath]
+			if !ok {
+				file = `package(default_visibility=["PUBLIC"])`+"\n\n"
+				filePaths = append(filePaths, filePath)
+			}
+
 			var install []string
 
 			if len(module.Packages) > 0 {
@@ -109,18 +104,14 @@ func main() {
 				}
 			}
 
-			fmt.Printf(`%s
-
-go_module_get(
-	name = "%s",
-	get = "%s",
-	version = "%s",
-	sum = "%s",
-	install = [%s],
-	deps = [%s],
-	visibility=["PUBLIC"],
-)`+"\n\n",
-				path.Join(*dir, path.Dir(module.Module.Path), "BUILD"),
+			file += fmt.Sprintf(`go_get(
+    name = "%s",
+    get = "%s",
+    version = "%s",
+    sum = "%s",
+    install = [%s],
+    deps = [%s],
+)`+"\n",
 				path.Base(module.Module.Path),
 				module.Module.Path,
 				module.Module.Version,
@@ -128,6 +119,55 @@ go_module_get(
 				strings.Join(install, ", "),
 				strings.Join(deps, ", "),
 			)
+
+			files[filePath] = file
+		}
+
+		sort.Strings(filePaths)
+
+		if *dryRun {
+			for _, filePath := range filePaths {
+				file := files[filePath]
+
+				fmt.Printf("%s:\n\n%s", path.Join(*dir, filePath, "BUILD"), file)
+			}
+		} else {
+			if filepath.IsAbs(*dir) {
+				log.Fatal("Absolute path not allowed")
+			}
+
+			// TODO: disable every path outside of the module root
+
+			if *clean {
+				err := os.RemoveAll(*dir)
+				if err != nil {
+					panic(err)
+				}
+			}
+
+			err := os.MkdirAll(*dir, 0755)
+			if err != nil {
+				panic(err)
+			}
+
+			for _, filePath := range filePaths {
+				dirPath := path.Join(*dir, filePath)
+
+				err := os.MkdirAll(dirPath, 0755)
+				if err != nil {
+					panic(err)
+				}
+
+				file, err := os.OpenFile(path.Join(dirPath, "BUILD"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+				if err != nil {
+					panic(err)
+				}
+
+				_, err = file.WriteString(files[filePath])
+				if err != nil {
+					panic(err)
+				}
+			}
 		}
 	} else {
 		log.Fatal("Either -stdout or -dir must be passed")
