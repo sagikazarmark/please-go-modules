@@ -59,19 +59,31 @@ func main() {
 				deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(dep, "/", "_", -1)))
 			}
 
+			moduleVersion := module.Module.Version
+			if module.Module.Replace != nil && module.Module.Replace.Version != "" {
+				moduleVersion = module.Module.Replace.Version
+			}
+
+			var replace string
+
+			if module.Module.Replace != nil {
+				replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
+			}
+
 			fmt.Printf(`go_get(
     name = "%s",
     get = "%s",
     version = "%s",
-    sum = "%s",
+    sum = "%s",%s
     install = [%s],
     deps = [%s],
     visibility=["PUBLIC"],
 )`+"\n\n",
 				strings.Replace(module.Module.Path, "/", "_", -1),
 				module.Module.Path,
-				module.Module.Version,
+				moduleVersion,
 				module.Sum,
+				replace,
 				strings.Join(install, ", "),
 				strings.Join(deps, ", "),
 			)
@@ -106,18 +118,30 @@ func main() {
 				}
 			}
 
+			moduleVersion := module.Module.Version
+			if module.Module.Replace != nil && module.Module.Replace.Version != "" {
+				moduleVersion = module.Module.Replace.Version
+			}
+
+			var replace string
+
+			if module.Module.Replace != nil {
+				replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
+			}
+
 			file += fmt.Sprintf(`go_get(
     name = "%s",
     get = "%s",
     version = "%s",
-    sum = "%s",
+    sum = "%s",%s
     install = [%s],
     deps = [%s],
 )`+"\n",
 				path.Base(module.Module.Path),
 				module.Module.Path,
-				module.Module.Version,
+				moduleVersion,
 				module.Sum,
+				replace,
 				strings.Join(install, ", "),
 				strings.Join(deps, ", "),
 			)

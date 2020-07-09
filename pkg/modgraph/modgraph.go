@@ -22,6 +22,7 @@ func CalculateDepGraph(module string, deps []golist.Package, sumFile sumfile.Fil
 	modules := make(map[string]*Module)
 	var moduleKeys []string
 	pkgToModule := make(map[string]string)
+	replaces := make(map[string]string)
 
 	for _, pkg := range deps {
 		packages[pkg.ImportPath] = pkg
@@ -52,6 +53,10 @@ func CalculateDepGraph(module string, deps []golist.Package, sumFile sumfile.Fil
 
 		moduleRoot.Packages = append(moduleRoot.Packages, pkg)
 		pkgToModule[pkg.ImportPath] = pkg.Module.Path
+
+		if pkg.Module.Replace != nil {
+			replaces[pkg.Module.Replace.Path] = pkg.Module.Path
+		}
 	}
 
 	for _, module := range sumFile.Modules {
@@ -60,7 +65,28 @@ func CalculateDepGraph(module string, deps []golist.Package, sumFile sumfile.Fil
 				continue
 			}
 
-			if moduleRoot, ok := modules[module.Name]; ok && moduleRoot.Module.Version == version.Version {
+			modulePath := module.Name
+
+			// Skip replaced module. Will be processed as the replaced module.
+			if moduleRoot, ok := modules[modulePath]; ok && moduleRoot.Module.Replace != nil && moduleRoot.Module.Path != moduleRoot.Module.Replace.Path {
+				continue
+			}
+
+			if replaced, ok := replaces[modulePath]; ok {
+				modulePath = replaced
+			}
+
+			if moduleRoot, ok := modules[modulePath]; ok {
+				moduleVersion := moduleRoot.Module.Version
+
+				if moduleRoot.Module.Replace != nil && moduleRoot.Module.Replace.Version != "" {
+					moduleVersion = moduleRoot.Module.Replace.Version
+				}
+
+				if moduleVersion != version.Version {
+					continue
+				}
+
 				moduleRoot.Sum = version.Sum
 			}
 		}
@@ -75,6 +101,10 @@ func CalculateDepGraph(module string, deps []golist.Package, sumFile sumfile.Fil
 			for _, pkg := range module.Packages {
 				for _, imp := range pkg.Imports {
 					if packages[imp].Standard {
+						continue
+					}
+
+					if imp == "C" {
 						continue
 					}
 
