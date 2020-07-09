@@ -1,5 +1,4 @@
 [parse]
-preloadbuilddefs = build_defs/go_module.build_defs
 preloadbuilddefs = build_defs/go.build_defs
 
 [go]
