@@ -44,6 +44,18 @@ func main() {
 
 	moduleList := modgraph.CalculateDepGraph(rootModule, deps, *sumFile)
 
+	depMap := make(map[string]golist.Package)
+
+	for _, dep := range deps {
+		depMap[dep.ImportPath] = dep
+	}
+
+	modMap := make(map[string]modgraph.Module)
+
+	for _, module := range moduleList {
+		modMap[module.Module.Path] = module
+	}
+
 	if *stdout {
 		for _, module := range moduleList {
 			var install []string
@@ -93,43 +105,55 @@ func main() {
 		var filePaths []string
 
 		for _, module := range moduleList {
-			filePath := path.Dir(module.Module.Path)
-
-			file, ok := files[filePath]
-			if !ok {
-				file = `package(default_visibility = ["PUBLIC"])` + "\n\n"
-				filePaths = append(filePaths, filePath)
-			}
-
-			var install []string
-
-			if len(module.Packages) > 0 {
+			if module.ResolvePackages {
 				for _, pkg := range module.Packages {
-					install = append(install, fmt.Sprintf("%q", strings.TrimPrefix(strings.TrimPrefix(pkg.ImportPath, module.Module.Path), "/")))
-				}
-			}
+					filePath := path.Dir(pkg.ImportPath)
 
-			var deps []string
-			for _, dep := range module.Deps {
-				if path.Dir(module.Module.Path) == path.Dir(dep) {
-					deps = append(deps, fmt.Sprintf("%q", ":"+path.Base(dep)))
-				} else {
-					deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s:%s", path.Join(*dir, path.Dir(dep)), path.Base(dep))))
-				}
-			}
+					file, ok := files[filePath]
+					if !ok {
+						file = `package(default_visibility = ["PUBLIC"])` + "\n\n"
+						filePaths = append(filePaths, filePath)
+					}
 
-			moduleVersion := module.Module.Version
-			if module.Module.Replace != nil && module.Module.Replace.Version != "" {
-				moduleVersion = module.Module.Replace.Version
-			}
+					install := fmt.Sprintf("%q", strings.TrimPrefix(strings.TrimPrefix(pkg.ImportPath, module.Module.Path), "/"))
 
-			var replace string
+					var deps []string
+					for _, depPath := range pkg.Imports {
+						if depMap[depPath].Standard {
+							continue
+						}
 
-			if module.Module.Replace != nil {
-				replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
-			}
+						if depPath == "C" {
+							continue
+						}
 
-			file += fmt.Sprintf(`go_get(
+						if modMap[depMap[depPath].Module.Path].ResolvePackages {
+							if path.Dir(pkg.ImportPath) == path.Dir(depPath) {
+								deps = append(deps, fmt.Sprintf("%q", ":"+path.Base(depPath)))
+							} else {
+								deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s:%s", path.Join(*dir, path.Dir(depPath)), path.Base(depPath))))
+							}
+						} else {
+							if path.Dir(pkg.ImportPath) == path.Dir(depMap[depPath].Module.Path) {
+								deps = append(deps, fmt.Sprintf("%q", ":"+path.Base(depMap[depPath].Module.Path)))
+							} else {
+								deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s:%s", path.Join(*dir, path.Dir(depMap[depPath].Module.Path)), path.Base(depMap[depPath].Module.Path))))
+							}
+						}
+					}
+
+					moduleVersion := module.Module.Version
+					if module.Module.Replace != nil && module.Module.Replace.Version != "" {
+						moduleVersion = module.Module.Replace.Version
+					}
+
+					var replace string
+
+					if module.Module.Replace != nil {
+						replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
+					}
+
+					file += fmt.Sprintf(`go_get(
     name = "%s",
     get = "%s",
     version = "%s",
@@ -137,16 +161,95 @@ func main() {
     install = [%s],
     deps = [%s],
 )`+"\n",
-				path.Base(module.Module.Path),
-				module.Module.Path,
-				moduleVersion,
-				module.Sum,
-				replace,
-				strings.Join(install, ", "),
-				strings.Join(deps, ", "),
-			)
+						path.Base(pkg.ImportPath),
+						module.Module.Path,
+						moduleVersion,
+						module.Sum,
+						replace,
+						install,
+						strings.Join(deps, ", "),
+					)
 
-			files[filePath] = file
+					files[filePath] = file
+				}
+			} else {
+				filePath := path.Dir(module.Module.Path)
+
+				file, ok := files[filePath]
+				if !ok {
+					file = `package(default_visibility = ["PUBLIC"])` + "\n\n"
+					filePaths = append(filePaths, filePath)
+				}
+
+				var install []string
+
+				if len(module.Packages) > 0 {
+					for _, pkg := range module.Packages {
+						install = append(install, fmt.Sprintf("%q", strings.TrimPrefix(strings.TrimPrefix(pkg.ImportPath, module.Module.Path), "/")))
+					}
+				}
+
+				var deps []string
+				for _, dep := range module.Deps {
+					if modMap[dep].ResolvePackages {
+						for _, pkg := range module.Packages {
+							for _, imp := range pkg.Imports {
+								if depMap[imp].Standard {
+									continue
+								}
+
+								if imp == "C" {
+									continue
+								}
+
+								if depMap[imp].Module.Path == dep {
+									if path.Dir(module.Module.Path) == path.Dir(imp) {
+										deps = append(deps, fmt.Sprintf("%q", ":"+path.Base(imp)))
+									} else {
+										deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s:%s", path.Join(*dir, path.Dir(imp)), path.Base(imp))))
+									}
+								}
+							}
+						}
+					} else {
+						if path.Dir(module.Module.Path) == path.Dir(dep) {
+							deps = append(deps, fmt.Sprintf("%q", ":"+path.Base(dep)))
+						} else {
+							deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s:%s", path.Join(*dir, path.Dir(dep)), path.Base(dep))))
+						}
+					}
+				}
+
+				moduleVersion := module.Module.Version
+				if module.Module.Replace != nil && module.Module.Replace.Version != "" {
+					moduleVersion = module.Module.Replace.Version
+				}
+
+				var replace string
+
+				if module.Module.Replace != nil {
+					replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
+				}
+
+				file += fmt.Sprintf(`go_get(
+    name = "%s",
+    get = "%s",
+    version = "%s",
+    sum = "%s",%s
+    install = [%s],
+    deps = [%s],
+)`+"\n",
+					path.Base(module.Module.Path),
+					module.Module.Path,
+					moduleVersion,
+					module.Sum,
+					replace,
+					strings.Join(install, ", "),
+					strings.Join(deps, ", "),
+				)
+
+				files[filePath] = file
+			}
 		}
 
 		sort.Strings(filePaths)

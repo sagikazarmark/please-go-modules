@@ -10,10 +10,11 @@ import (
 
 // Module represents a single module with all of it's packages and dependencies.
 type Module struct {
-	Module   *golist.Module
-	Packages []golist.Package
-	Sum      string
-	Deps     []string
+	Module          *golist.Module
+	Packages        []golist.Package
+	Sum             string
+	Deps            []string
+	ResolvePackages bool
 }
 
 // CalculateDepGraph calculates the dependency graph of a
@@ -49,6 +50,10 @@ func CalculateDepGraph(module string, deps []golist.Package, sumFile sumfile.Fil
 
 			moduleRoot.Module = pkg.Module
 			modules[pkg.Module.Path] = moduleRoot
+
+			if pkg.Module.Path == "cloud.google.com/go" {
+				moduleRoot.ResolvePackages = true
+			}
 		}
 
 		moduleRoot.Packages = append(moduleRoot.Packages, pkg)
