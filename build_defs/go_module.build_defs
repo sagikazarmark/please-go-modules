@@ -62,7 +62,7 @@ def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=
     )
 
 def go_module_install(name:str, module:str, src:str, deps:list=[], install:list=None,
-                      visibility:list=None, binary:bool=False, test_only:bool&testonly=False):
+                      visibility:list=None, binary:bool=False, test_only:bool&testonly=False, provide_src:bool=False):
     """Builds a Go module from previously downloaded sources.
 
     This is the compilation counterpart of the go_module_download rule.
@@ -115,12 +115,17 @@ def go_module_install(name:str, module:str, src:str, deps:list=[], install:list=
         # For most it doesn't matter but the top-level one will get lost.
         #cmd += [f" if [ -f {out}.a ]; then mkdir -p {out} && mv {out}.a {out}; fi" for out in real_outs]
 
+    provides = {"go": ":" + name}
+    if provide_src:
+        provides["go_src"] = src
+
+
     return build_rule(
         name = name,
         outs = outs,
         deps = deps,
         exported_deps = deps,
-        srcs = [src],
+        srcs = [src],# + deps,
         tools = {
             "go": [CONFIG.GO_TOOL],
         },
@@ -133,7 +138,7 @@ def go_module_install(name:str, module:str, src:str, deps:list=[], install:list=
         labels = ["link:plz-out/go"],
         sandbox = False,
         needs_transitive_deps = True,
-        provides = {"go": ":" + name, "go_src": src},
+        provides = provides,
     )
 
 
@@ -186,4 +191,57 @@ def go_module_get(name:str, module:str, version:str, sum:str=None, replace:str=N
         visibility = visibility,
         binary = binary,
         test_only = test_only,
+        provide_src = True,
+    )
+
+def go_get(name:str, module:str, version:str=None, sum:str=None, replace:str=None, src:str=None, deps:list=[], install:list=None,
+                  patch:str=None, strip:list=None, licences:list=None,
+                  visibility:list=None, binary:bool=False, test_only:bool&testonly=False):
+    """Defines a dependency on a third-party Go module.
+
+    This rule combines go_module_download and go_module_install
+
+    Args:
+      name (str): Name of the rule
+      module (str): Target module to download (eg. "github.com/gorilla/mux").
+      version (str): Module version.
+      sum (str): Module dir sum.
+      replace (str): Module replacement (eg. "github.com/mygorilla/mux").
+      deps (list): Dependencies
+      install (list): Allows specifying the exact list of packages to install. If this is not passed,
+                      the module's root package is installed. If you pass this for subpackages, you
+                      will need to explicitly add an empty string to the list if you want to install
+                      the root package from this module.
+      patch (str): Patch file to apply.
+      strip (list): List of paths to strip from the target.
+      licences (list): Licences this rule is subject to.
+      visibility (list): Visibility specification
+      binary (bool): True if the output of the rule is a binary.
+      test_only (bool): If true this rule will only be visible to tests.
+    """
+
+    src = src or go_module_download(
+        name = name,
+        tag = "download",
+        module = module,
+        version = version,
+        sum = sum,
+        replace = replace,
+        patch = patch,
+        strip = strip,
+        licences = licences,
+        visibility = visibility,
+        test_only = test_only,
+    )
+
+    return go_module_install(
+        name = name,
+        module = module,
+        src = src,
+        deps = deps,
+        install = install,
+        visibility = visibility,
+        binary = binary,
+        test_only = test_only,
+        provide_src = True,
     )

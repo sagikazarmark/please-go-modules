@@ -177,7 +177,7 @@ func main() {
 						}
 					}
 
-					file += fmt.Sprintf(`go_module_install(
+					file += fmt.Sprintf(`go_get(
     name = "%s",
     module = "%s",
 	install = [%s],
@@ -252,7 +252,7 @@ func main() {
 					replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
 				}
 
-				file += fmt.Sprintf(`go_module_get(
+				file += fmt.Sprintf(`go_get(
     name = "%s",
     module = "%s",
     version = "%s",
