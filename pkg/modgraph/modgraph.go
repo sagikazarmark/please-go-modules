@@ -51,7 +51,7 @@ func CalculateDepGraph(module string, deps []golist.Package, sumFile sumfile.Fil
 			moduleRoot.Module = pkg.Module
 			modules[pkg.Module.Path] = moduleRoot
 
-			if pkg.Module.Path == "cloud.google.com/go" {
+			if pkg.Module.Path == "cloud.google.com/go" || pkg.Module.Path == "google.golang.org/genproto" {
 				moduleRoot.ResolvePackages = true
 			}
 		}

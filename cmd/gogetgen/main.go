@@ -82,9 +82,9 @@ func main() {
 				replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
 			}
 
-			fmt.Printf(`go_get(
+			fmt.Printf(`go_module_get(
     name = "%s",
-    get = "%s",
+    module = "%s",
     version = "%s",
     sum = "%s",%s
     install = [%s],
@@ -106,6 +106,41 @@ func main() {
 
 		for _, module := range moduleList {
 			if module.ResolvePackages {
+				filePath := path.Dir(module.Module.Path)
+
+				file, ok := files[filePath]
+				if !ok {
+					file = `package(default_visibility = ["PUBLIC"])` + "\n\n"
+					filePaths = append(filePaths, filePath)
+				}
+
+				moduleVersion := module.Module.Version
+				if module.Module.Replace != nil && module.Module.Replace.Version != "" {
+					moduleVersion = module.Module.Replace.Version
+				}
+
+				var replace string
+
+				if module.Module.Replace != nil {
+					replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
+				}
+
+				file += fmt.Sprintf(`go_module_download(
+    name = "%s",
+    tag = "download",
+    module = "%s",
+    version = "%s",
+    sum = "%s",%s
+)`+"\n",
+					path.Base(module.Module.Path),
+					module.Module.Path,
+					moduleVersion,
+					module.Sum,
+					replace,
+				)
+
+				files[filePath] = file
+
 				for _, pkg := range module.Packages {
 					filePath := path.Dir(pkg.ImportPath)
 
@@ -142,31 +177,17 @@ func main() {
 						}
 					}
 
-					moduleVersion := module.Module.Version
-					if module.Module.Replace != nil && module.Module.Replace.Version != "" {
-						moduleVersion = module.Module.Replace.Version
-					}
-
-					var replace string
-
-					if module.Module.Replace != nil {
-						replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
-					}
-
-					file += fmt.Sprintf(`go_get(
+					file += fmt.Sprintf(`go_module_install(
     name = "%s",
-    get = "%s",
-    version = "%s",
-    sum = "%s",%s
-    install = [%s],
+    module = "%s",
+	install = [%s],
+	src = %s,
     deps = [%s],
 )`+"\n",
 						path.Base(pkg.ImportPath),
 						module.Module.Path,
-						moduleVersion,
-						module.Sum,
-						replace,
 						install,
+						fmt.Sprintf("%q", fmt.Sprintf("//%s:_%s#download", path.Join(*dir, path.Dir(module.Module.Path)), path.Base(module.Module.Path))),
 						strings.Join(deps, ", "),
 					)
 
@@ -231,9 +252,9 @@ func main() {
 					replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
 				}
 
-				file += fmt.Sprintf(`go_get(
+				file += fmt.Sprintf(`go_module_get(
     name = "%s",
-    get = "%s",
+    module = "%s",
     version = "%s",
     sum = "%s",%s
     install = [%s],
