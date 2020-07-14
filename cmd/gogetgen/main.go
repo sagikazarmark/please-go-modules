@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"log"
@@ -57,49 +58,136 @@ func main() {
 	}
 
 	if *stdout {
+		var buf bytes.Buffer
 		for _, module := range moduleList {
-			var install []string
-
-			if len(module.Packages) > 0 {
-				for _, pkg := range module.Packages {
-					install = append(install, fmt.Sprintf("%q", strings.TrimPrefix(strings.TrimPrefix(pkg.ImportPath, module.Module.Path), "/")))
+			if module.ResolvePackages {
+				moduleVersion := module.Module.Version
+				if module.Module.Replace != nil && module.Module.Replace.Version != "" {
+					moduleVersion = module.Module.Replace.Version
 				}
-			}
 
-			var deps []string
-			for _, dep := range module.Deps {
-				deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(dep, "/", "_", -1)))
-			}
+				var replace string
 
-			moduleVersion := module.Module.Version
-			if module.Module.Replace != nil && module.Module.Replace.Version != "" {
-				moduleVersion = module.Module.Replace.Version
-			}
+				if module.Module.Replace != nil {
+					replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
+				}
 
-			var replace string
+				fmt.Fprintf(&buf, `go_module_download(
+    name = "%s",
+    tag = "download",
+    module = "%s",
+    version = "%s",
+    sum = "%s",%s
+)`+"\n",
+					strings.Replace(module.Module.Path, "/", "_", -1),
+					module.Module.Path,
+					moduleVersion,
+					module.Sum,
+					replace,
+				)
 
-			if module.Module.Replace != nil {
-				replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
-			}
+				for _, pkg := range module.Packages {
+					install := fmt.Sprintf("%q", strings.TrimPrefix(strings.TrimPrefix(pkg.ImportPath, module.Module.Path), "/"))
 
-			fmt.Printf(`go_module_get(
+					var deps []string
+					for _, depPath := range pkg.Imports {
+						if depMap[depPath].Standard {
+							continue
+						}
+
+						if depPath == "C" {
+							continue
+						}
+
+						if modMap[depMap[depPath].Module.Path].ResolvePackages {
+							deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(depPath, "/", "_", -1)))
+						} else {
+							deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(depMap[depPath].Module.Path, "/", "_", -1)))
+						}
+					}
+
+					fmt.Fprintf(&buf, `go_get(
+    name = "%s",
+    module = "%s",
+	install = [%s],
+	src = %s,
+    deps = [%s],
+)`+"\n",
+						strings.Replace(pkg.ImportPath, "/", "_", -1),
+						module.Module.Path,
+						install,
+						fmt.Sprintf("%q", fmt.Sprintf(":_%s#download", strings.Replace(module.Module.Path, "/", "_", -1))),
+						strings.Join(deps, ", "),
+					)
+				}
+			} else {
+				var install []string
+
+				if len(module.Packages) > 0 {
+					for _, pkg := range module.Packages {
+						install = append(install, fmt.Sprintf("%q", strings.TrimPrefix(strings.TrimPrefix(pkg.ImportPath, module.Module.Path), "/")))
+					}
+				}
+
+				var deps []string
+				for _, dep := range module.Deps {
+					if modMap[dep].ResolvePackages {
+						for _, pkg := range module.Packages {
+							for _, imp := range pkg.Imports {
+								if depMap[imp].Standard {
+									continue
+								}
+
+								if imp == "C" {
+									continue
+								}
+
+								if depMap[imp].Module.Path == dep {
+									deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(imp, "/", "_", -1)))
+								}
+							}
+						}
+					} else {
+						deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(dep, "/", "_", -1)))
+					}
+				}
+
+				moduleVersion := module.Module.Version
+				if module.Module.Replace != nil && module.Module.Replace.Version != "" {
+					moduleVersion = module.Module.Replace.Version
+				}
+
+				var replace string
+
+				if module.Module.Replace != nil {
+					replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
+				}
+
+				fmt.Fprintf(&buf, `go_get(
     name = "%s",
     module = "%s",
     version = "%s",
     sum = "%s",%s
     install = [%s],
     deps = [%s],
-    visibility=["PUBLIC"],
-)`+"\n\n",
-				strings.Replace(module.Module.Path, "/", "_", -1),
-				module.Module.Path,
-				moduleVersion,
-				module.Sum,
-				replace,
-				strings.Join(install, ", "),
-				strings.Join(deps, ", "),
-			)
+)`+"\n",
+					strings.Replace(module.Module.Path, "/", "_", -1),
+					module.Module.Path,
+					moduleVersion,
+					module.Sum,
+					replace,
+					strings.Join(install, ", "),
+					strings.Join(deps, ", "),
+				)
+			}
 		}
+
+		buildFile, err := build.ParseBuild("BUILD", buf.Bytes())
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("%s", build.Format(buildFile))
 	} else if *dir != "" {
 		files := make(map[string]string)
 		var filePaths []string
