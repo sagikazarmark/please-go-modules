@@ -72,18 +72,27 @@ func main() {
 					replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
 				}
 
+				var deps []string
+				for i := path.Dir(module.Module.Path); strings.Contains(i, "/"); i = path.Dir(i) {
+					if _, ok := modMap[i]; ok {
+						deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf(":_%s#download", strings.Replace(i, "/", "_", -1))),)
+					}
+				}
+
 				fmt.Fprintf(&buf, `go_module_download(
     name = "%s",
     tag = "download",
     module = "%s",
     version = "%s",
-    sum = "%s",%s
+	sum = "%s",%s
+	deps = [%s],
 )`+"\n",
 					strings.Replace(module.Module.Path, "/", "_", -1),
 					module.Module.Path,
 					moduleVersion,
 					module.Sum,
 					replace,
+					strings.Join(deps, ", "),
 				)
 
 				for _, pkg := range module.Packages {
@@ -129,6 +138,13 @@ func main() {
 					}
 				}
 
+				var downloadDeps []string
+				for i := path.Dir(module.Module.Path); strings.Contains(i, "/"); i = path.Dir(i) {
+					if _, ok := modMap[i]; ok {
+						downloadDeps = append(downloadDeps, fmt.Sprintf("%q", fmt.Sprintf(":_%s#download", strings.Replace(i, "/", "_", -1))),)
+					}
+				}
+
 				var deps []string
 				for _, dep := range module.Deps {
 					if modMap[dep].ResolvePackages {
@@ -170,6 +186,7 @@ func main() {
     sum = "%s",%s
     install = [%s],
     deps = [%s],
+    download_deps = [%s],
 )`+"\n",
 					strings.Replace(module.Module.Path, "/", "_", -1),
 					module.Module.Path,
@@ -178,6 +195,7 @@ func main() {
 					replace,
 					strings.Join(install, ", "),
 					strings.Join(deps, ", "),
+					strings.Join(downloadDeps, ", "),
 				)
 			}
 		}
@@ -213,18 +231,27 @@ func main() {
 					replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
 				}
 
+				var deps []string
+				for i := path.Dir(module.Module.Path); strings.Contains(i, "/"); i = path.Dir(i) {
+					if _, ok := modMap[i]; ok {
+						deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf(":_%s#download", strings.Replace(i, "/", "_", -1))),)
+					}
+				}
+
 				file += fmt.Sprintf(`go_module_download(
     name = "%s",
     tag = "download",
     module = "%s",
     version = "%s",
-    sum = "%s",%s
+	sum = "%s",%s
+	deps = [%s],
 )`+"\n",
 					path.Base(module.Module.Path),
 					module.Module.Path,
 					moduleVersion,
 					module.Sum,
 					replace,
+					strings.Join(deps, ", "),
 				)
 
 				files[filePath] = file
@@ -298,6 +325,13 @@ func main() {
 					}
 				}
 
+				var downloadDeps []string
+				for i := path.Dir(module.Module.Path); strings.Contains(i, "/"); i = path.Dir(i) {
+					if _, ok := modMap[i]; ok {
+						downloadDeps = append(downloadDeps, fmt.Sprintf("%q", fmt.Sprintf(":_%s#download", strings.Replace(i, "/", "_", -1))),)
+					}
+				}
+
 				var deps []string
 				for _, dep := range module.Deps {
 					if modMap[dep].ResolvePackages {
@@ -346,7 +380,8 @@ func main() {
     version = "%s",
     sum = "%s",%s
     install = [%s],
-    deps = [%s],
+	deps = [%s],
+	download_deps = [%s],
 )`+"\n",
 					path.Base(module.Module.Path),
 					module.Module.Path,
@@ -355,6 +390,7 @@ func main() {
 					replace,
 					strings.Join(install, ", "),
 					strings.Join(deps, ", "),
+					strings.Join(downloadDeps, ", "),
 				)
 
 				files[filePath] = file

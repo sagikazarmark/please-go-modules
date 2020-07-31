@@ -26,6 +26,14 @@ func CalculateDepGraph(module string, deps []golist.Package, sumFile sumfile.Fil
 	replaces := make(map[string]string)
 
 	for _, pkg := range deps {
+		if (pkg.Name == "main" && strings.HasSuffix(pkg.ImportPath, ".test")) || strings.HasSuffix(pkg.Name, "_test") {
+			continue
+		}
+
+		if pkg.ForTest != "" {
+			pkg.ImportPath = pkg.ForTest
+		}
+
 		packages[pkg.ImportPath] = pkg
 
 		// We don't want standard packages
@@ -120,6 +128,23 @@ func CalculateDepGraph(module string, deps []golist.Package, sumFile sumfile.Fil
 
 					depList[pkgToModule[imp]] = true
 				}
+
+				/*for _, imp := range pkg.TestImports {
+					if packages[imp].Standard {
+						continue
+					}
+
+					if imp == "C" {
+						continue
+					}
+
+					// Ignore self-references
+					if packages[imp].Module != nil && packages[imp].Module.Path == modulePath {
+						continue
+					}
+
+					depList[pkgToModule[imp]] = true
+				}*/
 			}
 		}
 

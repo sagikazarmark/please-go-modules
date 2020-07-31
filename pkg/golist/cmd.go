@@ -30,7 +30,7 @@ func Deps(module string) ([]Package, error) {
 		module = "."
 	}
 
-	cmd := exec.Command("go", "list", "-deps", "-json", fmt.Sprintf("%s/...", module))
+	cmd := exec.Command("go", "list", "-deps", "-test", "-json", fmt.Sprintf("%s/...", module))
 	p, err := cmd.Output()
 	if err != nil {
 		return nil, err
