@@ -38,3 +38,18 @@ func Deps(module string) ([]Package, error) {
 
 	return ParsePackages(p)
 }
+
+// DepsWithoutTests returns the list of dependencies without tests.
+func DepsWithoutTests(module string) ([]Package, error) {
+	if module == "" {
+		module = "."
+	}
+
+	cmd := exec.Command("go", "list", "-deps", "-json", fmt.Sprintf("%s/...", module))
+	p, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	return ParsePackages(p)
+}

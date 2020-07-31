@@ -1,6 +1,9 @@
 package modgraph
 
 import (
+	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -165,4 +168,133 @@ func CalculateDepGraph(module string, deps []golist.Package, sumFile sumfile.Fil
 	}
 
 	return moduleList
+}
+
+type Package struct {
+	Path     string
+	Dir      string
+	Deps     []string
+	TestDeps []string
+
+	HasTests            bool
+	HasIntegrationTests bool
+
+	hasDep     map[string]bool
+	hasTestDep map[string]bool
+}
+
+// CalculateInternalDepGraph calculates the dependency graph of internal dependencies, including test packages.
+func CalculateInternalDepGraph(module string, deps []golist.Package) []*Package {
+	var packages []*Package
+	packageIndex := make(map[string]int)
+
+	for _, pkg := range deps {
+		if !strings.HasPrefix(pkg.ImportPath, module+"/") {
+			continue
+		}
+
+		path := pkg.ImportPath
+
+		if pkg.ForTest != "" {
+			path = pkg.ForTest
+		} else if pkg.Name == "main" && strings.HasSuffix(pkg.ImportPath, ".test") {
+			path = strings.TrimSuffix(pkg.ImportPath, ".test")
+		}
+
+		i, ok := packageIndex[path]
+		if !ok {
+			i = len(packages)
+			packages = append(packages, &Package{
+				Path: path,
+				Dir:  pkg.Dir,
+
+				hasDep:     make(map[string]bool),
+				hasTestDep: make(map[string]bool),
+			})
+			packageIndex[path] = i
+		}
+
+		_package := packages[i]
+
+		for _, imp := range pkg.Imports {
+			if !strings.HasPrefix(imp, module+"/") || strings.Contains(imp, fmt.Sprintf("[%s.test]", path)) {
+				continue
+			}
+
+			if _, ok := _package.hasDep[imp]; ok {
+				continue
+			}
+
+			if imp == path {
+				continue
+			}
+
+			_package.Deps = append(_package.Deps, imp)
+			_package.hasDep[imp] = true
+		}
+
+		sort.Strings(_package.Deps)
+
+		for _, imp := range pkg.TestImports {
+			if !strings.HasPrefix(imp, module+"/") || strings.Contains(imp, fmt.Sprintf("[%s.test]", path)) {
+				continue
+			}
+
+			if _, ok := _package.hasTestDep[imp]; ok {
+				continue
+			}
+
+			if imp == path {
+				continue
+			}
+
+			_package.TestDeps = append(_package.TestDeps, imp)
+			_package.hasTestDep[imp] = true
+		}
+
+		for _, imp := range pkg.XTestImports {
+			if !strings.HasPrefix(imp, module+"/") || strings.Contains(imp, fmt.Sprintf("[%s.test]", path)) {
+				continue
+			}
+
+			if _, ok := _package.hasTestDep[imp]; ok {
+				continue
+			}
+
+			if imp == path {
+				continue
+			}
+
+			_package.TestDeps = append(_package.TestDeps, imp)
+			_package.hasTestDep[imp] = true
+		}
+
+		sort.Strings(_package.TestDeps)
+
+		for _, file := range pkg.TestGoFiles {
+			_package.HasTests = true
+
+			c, _ := ioutil.ReadFile(filepath.Join(pkg.Dir, file))
+
+			if strings.Contains(string(c), "func TestIntegration(t *testing.T) {") {
+				_package.HasIntegrationTests = true
+
+				break
+			}
+		}
+
+		for _, file := range pkg.XTestGoFiles {
+			_package.HasTests = true
+
+			c, _ := ioutil.ReadFile(filepath.Join(pkg.Dir, file))
+
+			if strings.Contains(string(c), "func TestIntegration(t *testing.T) {") {
+				_package.HasIntegrationTests = true
+
+				break
+			}
+		}
+	}
+
+	return packages
 }
