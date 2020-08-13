@@ -67,7 +67,7 @@ PkgLoop:
 			testDeps = append(testDeps, fmt.Sprintf("%q", "//"+strings.TrimPrefix(dep, rootModule+"/")))
 		}
 
-		file += fmt.Sprintf(`filegroup(
+		file += fmt.Sprintf(`go_library(
     name = "%s",
     srcs = glob(["*.go"], exclude = ["*_test.go"]),
     deps = [%s],
@@ -82,8 +82,8 @@ PkgLoop:
 			file += fmt.Sprintf(`
 go_test(
     name = "test",
-    srcs = [":%s"],
-    deps = [%s],
+    srcs = glob(["*_test.go"]),
+    deps = [":%s", %s],
 )
 `,
 				path.Base(pkg.Path),
@@ -95,8 +95,8 @@ go_test(
 			file += fmt.Sprintf(`
 go_test(
     name = "integration_test",
-    srcs = [":%s"],
-    deps = [%s],
+    srcs = glob(["*_test.go"]),
+    deps = [":%s", %s],
     flags = "-test.run ^TestIntegration$",
     labels = ["integration"],
 )
