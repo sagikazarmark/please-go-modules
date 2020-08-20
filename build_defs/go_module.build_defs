@@ -1,3 +1,39 @@
+def moddown_binary(name:str, version:str, hashes:list=None, out:str="",
+                   visibility:list=None, test_only:bool&testonly=False, host:bool=True):
+    """Downloads a precompiled moddown binary.
+
+    Args:
+      name (str): Name of the rule.
+      version (str): Version of the binary to download.
+      hashes (list): Hashes to verify the download against.
+      out (str): Output name of the binary. Chosen automatically if not given.
+      visibility (list): Visibility declaration of the rule.
+      test_only (bool): If true the rule is only visible to test targets.
+      host (bool): If true the rule will always target the host OS and Arch.
+    """
+
+    os = CONFIG.HOSTOS if host else CONFIG.OS
+    arch = CONFIG.HOSTARCH if host else CONFIG.ARCH
+
+    return genrule(
+        name = name,
+        srcs = [remote_file(
+            name = name,
+            _tag = "download",
+            url = f"https://github.com/sagikazarmark/moddown/releases/download/v{version}/moddown_{os}_{arch}.tar.gz",
+            hashes = hashes,
+            out = f"moddown-{version}-{os}-{arch}.tar.gz",
+        )],
+        outs = [out or "moddown"],
+        binary = True,
+        cmd = '"$TOOL" x "$SRCS" moddown -o tmp && mv $(find tmp -name "moddown") "$OUT"',
+        tools = [CONFIG.JARCAT_TOOL],
+        visibility = visibility,
+        test_only = test_only,
+    )
+
+#CONFIG.setdefault("MODDOWN_TOOL", "//:moddown")
+
 def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=None, replace:str=None, deps:list=[],
                        patch:str=None, strip:list=None, licences:list=None, visibility:list=None, test_only:bool&testonly=False):
     """Downloads the source of a Go module.
@@ -27,8 +63,8 @@ def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=
 
     tools = {
         "go": [CONFIG.GO_TOOL],
-        #"moddown": ["//cmd/moddown"],
-        "jq": [CONFIG.JQ_TOOL],
+        "moddown": [moddown_binary("moddown", "0.1.0")],
+        #"jq": [CONFIG.JQ_TOOL],
     }
 
     download_module = replace or module
@@ -46,15 +82,20 @@ def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=
     #cmd += [f'"$TOOLS_MODDOWN" -dest {dest} -sum={sum} {download_module}@{version}',]
 
     cmd += [
-        f'"$TOOLS_GO" mod download -x -modcacherw -json {download_module}@{version} > "$TMP_DIR/_module.json"',
-        '! jq -e -r ".Error // empty" "$TMP_DIR/_module.json"',
+        #f'"$TOOLS_GO" mod download -x -modcacherw -json {download_module}@{version} > "$TMP_DIR/_module.json"',
+        #'! jq -e -r ".Error // empty" "$TMP_DIR/_module.json"',
         #'export MODULE_ERROR=$(cat "$TMP_DIR/_module.json" | jq -r ".Error")',
         #'if [ ! -z "$MODULE_ERROR" ]; then echo "$MODULE_ERROR" && exit 1; fi',
-        f'cp -r $(jq -e -r ".Dir" "$TMP_DIR/_module.json")/. {dest}',
+        #f'cp -r $(jq -e -r ".Dir" "$TMP_DIR/_module.json")/. {dest}',
     ]
 
+    download_cmd = f'"$TOOLS_GO" mod download -x -modcacherw -json {download_module}@{version} | "$TOOLS_MODDOWN" -f - -dest {dest}'
+
     if sum: # The sum is provided so compare it
-        cmd += [f'(if [ $(jq -e -r ".Sum" "$TMP_DIR/_module.json") != "{sum}" ]; then echo "verifying {download_module}@{version}: checksum mismatch\n        downloaded: $(jq -e -r ".Sum" "$TMP_DIR/_module.json")\n        sum:        {sum}"; exit 1; fi)']
+        #cmd += [f'(if [ $(jq -e -r ".Sum" "$TMP_DIR/_module.json") != "{sum}" ]; then echo "verifying {download_module}@{version}: checksum mismatch\n        downloaded: $(jq -e -r ".Sum" "$TMP_DIR/_module.json")\n        sum:        {sum}"; exit 1; fi)']
+        download_cmd += f" -sum {sum}"
+
+    cmd += [download_cmd]
 
     if patch:
         cmd += [f'patch -s -d {dest} -p1 < "$TMP_DIR"/$SRCS_PATCH']
@@ -79,6 +120,136 @@ def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=
         labels = labels + ["link:plz-out/go"],
         sandbox = False,
         licences = licences,
+    )
+
+def go_module_compile(name:str, module:str, src:str, deps:list=[], install:list=None,
+                      visibility:list=None, binary:bool=False, test_only:bool&testonly=False, provide_src:bool=False):
+    """Compiles a Go module from previously downloaded sources.
+
+    This is the compilation counterpart of the go_module_download rule.
+
+    Args:
+      name (str): Name of the rule
+      module (str): Target module to download (eg. "github.com/gorilla/mux").
+      src (list): Module source rule
+      deps (list): Dependencies
+      install (list): Allows specifying the exact list of packages to install. If this is not passed,
+                      the module's root package is installed. If you pass this for subpackages, you
+                      will need to explicitly add an empty string to the list if you want to install
+                      the root package from this module.
+      visibility (list): Visibility specification
+      binary (bool): True if the output of the rule is a binary.
+      test_only (bool): If true this rule will only be visible to tests.
+    """
+
+    all_installs = []
+    outs = [module] # TODO: simplify
+
+    if install:
+        all_installs += [(module + '/' + i if i else module) for i in install]
+    else:
+        all_installs += [module]
+
+    basem = basename(module)
+
+    cmd = [
+        #'export GOPATH="$(find \"$TMP_DIR\" \( -name src -o -name pkg \) -exec dirname {} \; | sort | uniq | tr \'\\n\' \':\' | sed \'s/:$//\')" GO111MODULE="off"',
+        #'"$TOOLS_GO" install ' + ' '.join(all_installs or install),
+        #f'"$TOOLS_GO" install -pkgdir pkg/{CONFIG.GOOS}_{CONFIG.GOARCH} ' + ' '.join(all_installs or install),
+        f"mkdir -p pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{module}",
+        f"cd $PKG_DIR/src/{module}",
+        f'"$TOOLS_GO" tool compile -o $TMP_DIR/pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{module}/{basem}.a -trimpath "$TMP_DIR/src/{module}=>" -p {module} -complete -goversion go1.14.6 -D "" -pack -c=4 ./*.go',
+    ]
+
+    #if package_name():
+    #    cmd += [
+    #        # The outputs tend to end up in subdirectories (Go seems to match them to the location the source came from)
+    #        "rm -rf bin" if binary else "rm -rf pkg",
+    #        'mv "$PKG_DIR/bin" .' if binary else 'mv "$PKG_DIR/pkg" .',
+    #    ]
+
+    outs = []
+
+    if binary:
+        outs = ["bin/" + name]
+    else:
+        outs = [f"pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{out}.a" for out in all_installs]
+        #outs = [f"pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{out}/" + basename(out) + ".a" for out in all_installs]
+        #real_outs = [f"pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{out}" for out in all_installs]
+        #outs = [f"pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{out}" for out in outs]
+        # Outputs are created one directory down from where we want them.
+        # For most it doesn't matter but the top-level one will get lost.
+        #cmd += [f" if [ -f {out}.a ]; then mkdir -p {out} && mv {out}.a {out}; fi" for out in real_outs]
+
+    outs = [f"pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{module}/{basem}.a"]
+
+    provides = {"go": ":" + name}
+    if provide_src:
+        provides["go_src"] = src
+
+
+    return build_rule(
+        name = name,
+        outs = outs,
+        deps = deps,
+        exported_deps = deps,
+        srcs = [src],
+        tools = {
+            "go": [CONFIG.GO_TOOL],
+        },
+        visibility = visibility,
+        building_description = "Compiling...",
+        cmd = " && ".join(cmd),
+        binary = binary,
+        requires = ["go", "go_src"],
+        test_only = test_only,
+        labels = ["link:plz-out/go"],
+        sandbox = False,
+        needs_transitive_deps = True,
+        provides = provides,
+    )
+
+def go_compile(name:str, import_path:str, srcs:list=[], go_srcs:list=None, src_dir:str="", deps:list=[],
+               visibility:list=None, binary:bool=False, test_only:bool&testonly=False):
+    """Compiles a Go package.
+
+    Args:
+      name (str): Name of the rule
+      import_path (str): Import path of the package (eg. "github.com/gorilla/mux").
+      go_srcs (list): Go source files.
+      src_dir (str): Source directory (inside the package).
+      deps (list): Dependencies
+      visibility (list): Visibility specification
+      binary (bool): True if the output of the rule is a binary.
+      test_only (bool): If true this rule will only be visible to tests.
+    """
+
+    src_dir = "/%s" % (src_dir) if src_dir else ""
+
+    go_srcs = " ".join(go_srcs) if go_srcs else "./*.go"
+
+    cmd = [
+        f"cd $PKG_DIR{src_dir}",
+        f'"$TOOLS_GO" tool compile -I "$(pwd | sed "s/plz-out\/.*//")plz-out/go/pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}" -o $OUT -trimpath "$TMP_DIR/$PKG_DIR{src_dir}=>" -p {import_path} -complete -goversion go1.14.6 -D "" -pack -c=4 {go_srcs}',
+    ]
+
+    return build_rule(
+        name = name,
+        outs = [f"pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/{import_path}.a"],
+        srcs = srcs,
+        deps = deps,
+        tools = {
+            "go": [CONFIG.GO_TOOL],
+        },
+        visibility = visibility,
+        building_description = "Compiling...",
+        cmd = " && ".join(cmd),
+        binary = binary,
+        requires = ["go", "go_src"],
+        test_only = test_only,
+        labels = ["link:plz-out/go"],
+        sandbox = False,
+        needs_transitive_deps = True,
     )
 
 def go_module_install(name:str, module:str, src:str, deps:list=[], install:list=None,
@@ -140,7 +311,7 @@ def go_module_install(name:str, module:str, src:str, deps:list=[], install:list=
         provides["go_src"] = src
 
 
-    return build_rule(  
+    return build_rule(
         name = name,
         outs = outs,
         deps = deps,

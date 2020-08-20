@@ -9,3 +9,16 @@ go_binary(
         "//example/third_party/go/logur.dev/adapter:logrus",
     ],
 )
+
+go_module_download(
+    name = "test_download",
+    module = "github.com/sagikazarmark/functional-options",
+    version = "v0.0.0-20200123060825-f70eefebf3bc",
+    sum = "h1:KkEl73Fv7raGkzw5vxw7fQkyuW51joXsNojPlAkRRQw=",
+)
+
+go_module_compile(
+    name = "test_compile",
+    module = "github.com/sagikazarmark/functional-options",
+    src = ":test_download",
+)
