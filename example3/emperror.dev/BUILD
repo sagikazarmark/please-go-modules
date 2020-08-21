@@ -7,14 +7,6 @@ go_module_download(
     visibility = ["//example3/..."],
 )
 
-build_rule(
-    name = "errors",
-    tag = "source",
-    cmd = "",
-    deps = ["//example3:_errors#download"],
-    output_dirs = ["example3/src/emperror.dev/errors"],
-)
-
 go_library(
     name = "errors",
     srcs = [go_downloaded_source("errors", ":_errors#download")],
