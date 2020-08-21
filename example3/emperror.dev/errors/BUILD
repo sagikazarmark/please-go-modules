@@ -1,0 +1,13 @@
+genrule(
+    name = "source",
+    cmd = "",
+    deps = ["//example3/emperror.dev:_errors#download"],
+    output_dirs = ["example3/emperror.dev/src/emperror.dev/errors/match"],
+)
+
+go_library(
+    name = "match",
+    srcs = [":source"],
+    visibility = ["PUBLIC"],
+    deps = ["//example3/emperror.dev:errors"],
+)

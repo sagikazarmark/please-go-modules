@@ -22,6 +22,7 @@ var (
 	dir    = flag.String("dir", "", "Dump rules into a directory")
 	dryRun = flag.Bool("dry-run", false, "Do not write anything to file")
 	clean  = flag.Bool("clean", false, "Clean target before generating new rules")
+	genpkg = flag.Bool("genpkg", false, "Generate build targets for each package")
 )
 
 func main() {
@@ -64,7 +65,134 @@ func main() {
 	var filePaths []string
 
 	for _, module := range moduleList {
-		if module.ResolvePackages {
+		if *genpkg {
+			filePath := path.Dir(module.Module.Path)
+
+			// Get (and create) file
+			file, ok := files[filePath]
+			if !ok {
+				filePaths = append(filePaths, filePath)
+			}
+
+			moduleVersion := module.Module.Version
+			if module.Module.Replace != nil && module.Module.Replace.Version != "" {
+				moduleVersion = module.Module.Replace.Version
+			}
+
+			var replace string
+
+			if module.Module.Replace != nil {
+				replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
+			}
+
+			name := path.Base(module.Module.Path)
+			visibility := fmt.Sprintf("//%s/...", path.Dir(module.Module.Path))
+
+			if *dir == "" {
+				name = strings.Replace(module.Module.Path, "/", "_", -1)
+				visibility = "PRIVATE"
+			}
+
+			file += fmt.Sprintf(`go_module_download(
+    name = "%s",
+    tag = "source",
+    module = "%s",
+    version = "%s",
+    sum = "%s",
+    visibility = ["%s"],%s
+)`+"\n",
+				name,
+				module.Module.Path,
+				moduleVersion,
+				module.Sum,
+				visibility,
+				replace,
+			)
+
+			// Save file
+			files[filePath] = file
+
+			for _, pkg := range module.Packages {
+				filePath := path.Dir(pkg.ImportPath)
+
+				// Get (and create) file
+				file, ok := files[filePath]
+				if !ok {
+					filePaths = append(filePaths, filePath)
+				}
+
+				name := path.Base(pkg.ImportPath)
+				if *dir == "" {
+					name = strings.Replace(pkg.ImportPath, "/", "_", -1)
+				}
+
+				// This isn't the root package, so we need to fetch the source
+				if module.Module.Path != pkg.ImportPath {
+					moduleSource := fmt.Sprintf("//%s:_%s#source", path.Join(*dir, path.Dir(module.Module.Path)), path.Base(module.Module.Path))
+					if *dir == "" {
+						moduleSource = fmt.Sprintf(":_%s#source", strings.Replace(module.Module.Path, "/", "_", -1))
+					}
+
+					file += fmt.Sprintf(`filegroup(
+    name = "%s",
+    tag = "source",
+    srcs = "%s",
+    deps = ["%s"],
+    visibility = ["PRIVATE"],
+    output_is_complete = True,
+)`+"\n",
+						name,
+						"", // TODO: find go files for the package
+						moduleSource,
+					)
+				}
+
+				install := fmt.Sprintf("%q", strings.TrimPrefix(strings.TrimPrefix(pkg.ImportPath, module.Module.Path), "/"))
+
+				var deps []string
+				for _, depPath := range pkg.Imports {
+					if depMap[depPath].Standard {
+						continue
+					}
+
+					if depPath == "C" {
+						continue
+					}
+
+					if modMap[depMap[depPath].Module.Path].ResolvePackages {
+						if path.Dir(pkg.ImportPath) == path.Dir(depPath) {
+							deps = append(deps, fmt.Sprintf("%q", ":"+path.Base(depPath)))
+						} else {
+							deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s:%s", path.Join(*dir, path.Dir(depPath)), path.Base(depPath))))
+						}
+					} else {
+						if path.Dir(pkg.ImportPath) == path.Dir(depMap[depPath].Module.Path) {
+							deps = append(deps, fmt.Sprintf("%q", ":"+path.Base(depMap[depPath].Module.Path)))
+						} else if *dir == "" {
+							deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(depMap[depPath].Module.Path, "/", "_", -1)))
+						} else {
+							deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s:%s", path.Join(*dir, path.Dir(depMap[depPath].Module.Path)), path.Base(depMap[depPath].Module.Path))))
+						}
+					}
+				}
+
+				file += fmt.Sprintf(`go_get(
+    name = "%s",
+    module = "%s",
+	install = [%s],
+	src = %s,
+    deps = [%s],
+)`+"\n",
+					name,
+					module.Module.Path,
+					install,
+					fmt.Sprintf("%q", fmt.Sprintf("//%s:_%s#download", path.Join(*dir, path.Dir(module.Module.Path)), path.Base(module.Module.Path))),
+					strings.Join(deps, ", "),
+				)
+
+				files[filePath] = file
+			}
+		} else if module.ResolvePackages {
 			filePath := path.Dir(module.Module.Path)
 
 			file, ok := files[filePath]

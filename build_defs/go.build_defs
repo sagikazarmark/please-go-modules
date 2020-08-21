@@ -895,7 +895,8 @@ def _go_library_cmds(complete=True, all_srcs=False, cover=True, filter_srcs=True
     out_cmd = ' -o "$OUTS_O" -symabis $SRCS_ABI -asmhdr "$OUTS_H"' if abi else ' -o "$OUT"'
     _GOPATH = ' '.join(
         ['-I "%s" -I "%s/pkg/%s_%s"' % (p, p, CONFIG.GOOS, CONFIG.GOARCH) for p in CONFIG.GOPATH.split(':')])
-    compile_cmd = f'"$TOOLS_GO" tool compile -trimpath "$TMP_DIR" {complete_flag}{_GOPATH} $(for i in $(find "$TMP_DIR" -name pkg -type d); do echo -n " -I \"$i\"/{CONFIG.GOOS}_{CONFIG.GOARCH} "; done) -pack {out_cmd}'
+    #compile_cmd = f'"$TOOLS_GO" tool compile -trimpath "$TMP_DIR" {complete_flag}{_GOPATH} $(for i in $(find "$TMP_DIR" -name pkg -type d); do echo -n " -I \"$i\"/{CONFIG.GOOS}_{CONFIG.GOARCH} "; done) -pack {out_cmd}'
+    compile_cmd = f'"$TOOLS_GO" tool compile -trimpath "$TMP_DIR" {complete_flag}{_GOPATH} -I "$(pwd | sed "s/plz-out\/.*//")plz-out/go/pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}" -I "$(pwd | sed "s/plz-out\/.*//")plz-out/go/pkg/{CONFIG.GOOS}_{CONFIG.GOARCH}/example3" -pack {out_cmd}'
     # Annotates files for coverage.
     cover_cmd = 'for SRC in $SRCS; do BN=$(basename $SRC); go tool cover -mode=set -var=GoCover_${BN//[.-]/_} $SRC > _tmp.go && mv -f _tmp.go $SRC; done'
     prefix = ('export SRCS="$PKG_DIR/*.go"; ' + _LINK_PKGS_CMD) if all_srcs else _LINK_PKGS_CMD
