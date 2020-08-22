@@ -1,30 +1,15 @@
-go_module_download(
-    name = "multierr",
-    tag = "download",
-    module = "go.uber.org/multierr",
-    version = "v1.5.0",
-    sum = "h1:KCa4XfM8CWFCpxXRGok+Q0SS/0XBhMDbHHGABQLvD2A=",
-    visibility = ["//example3/go.uber.org/..."],
-)
-
-go_library(
-    name = "multierr",
-    srcs = [go_downloaded_source("multierr", ":_multierr#download")],
+genrule(
+    name = "atomic",
+    cmd = 'cp "$PKG/atomic/atomic.a" $OUT',
+    outs = ["atomic.a"],
+    deps = ["//example3/go.uber.org/atomic"],
     visibility = ["PUBLIC"],
-    deps = [":atomic"],
 )
 
-go_module_download(
-    name = "atomic",
-    tag = "download",
-    module = "go.uber.org/atomic",
-    version = "v1.6.0",
-    sum = "h1:Ezj3JGmsOnG1MoRWQkPBsKLe9DwWD9QeXzTRzzldNVk=",
-    visibility = ["//example3/go.uber.org/..."],
-)
-
-go_library(
-    name = "atomic",
-    srcs = [go_downloaded_source("atomic", ":_atomic#download")],
+genrule(
+    name = "multierr",
+    cmd = 'cp "$PKG/multierr/multierr.a" $OUT',
+    outs = ["multierr.a"],
+    deps = ["//example3/go.uber.org/multierr"],
     visibility = ["PUBLIC"],
 )

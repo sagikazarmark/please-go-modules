@@ -1,18 +1,7 @@
-go_module_download(
+genrule(
     name = "errors",
-    tag = "download",
-    module = "emperror.dev/errors",
-    version = "v0.7.0",
-    sum = "h1:vf0gZ0j9BJCXQYm0M21DPKeXy9PUjvX1YHXhNzIsqOY=",
-    visibility = ["//example3/..."],
-)
-
-go_library(
-    name = "errors",
-    srcs = [go_downloaded_source("errors", ":_errors#download")],
+    cmd = 'cp "$PKG/errors/errors.a" $OUT',
+    outs = ["errors.a"],
+    deps = ["//example3/emperror.dev/errors"],
     visibility = ["PUBLIC"],
-    deps = [
-        "//example3/github.com/pkg:errors",
-        "//example3/go.uber.org:multierr",
-    ],
 )
