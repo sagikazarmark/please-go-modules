@@ -9,5 +9,6 @@ go_library(
     name = "match",
     srcs = [":source"],
     visibility = ["PUBLIC"],
-    deps = ["//example3/emperror.dev:errors"],
+    deps = ["//example3/emperror.dev/errors"],
+    _import_path = "emperror.dev/errors/match",
 )

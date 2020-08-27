@@ -12,15 +12,8 @@ go_library(
     srcs = [go_downloaded_source("errors", ":_errors#download")],
     visibility = ["PUBLIC"],
     deps = [
-        "//example3/github.com/pkg:errors",
-        "//example3/go.uber.org:multierr",
+        "//example3/github.com/pkg/errors",
+        "//example3/go.uber.org/multierr",
     ],
-)
-
-genrule(
-    name = "match",
-    cmd = 'cp "$PKG/match/match.a" $OUT',
-    outs = ["match.a"],
-    deps = ["//example3/emperror.dev/errors/match"],
-    visibility = ["PUBLIC"],
+    _import_path = "emperror.dev/errors",
 )
