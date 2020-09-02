@@ -4,7 +4,7 @@ preloadbuilddefs = build_defs/go_module.build_defs
 #preloadbuilddefs = build_defs/vendor.build_defs
 
 [go]
-importpath = github.com/sagikazarmark/please-go-modules
+importpath = github.com/sagikazarmark/please-go-modules/example4
 
 [buildconfig]
 moddown-tool = //:moddown

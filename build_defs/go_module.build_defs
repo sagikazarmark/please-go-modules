@@ -128,7 +128,7 @@ def go_downloaded_source(name:str, srcs:str):
     """Filters re-exports its srcs filtering on the provided extension"""
     return build_rule(
         name = name,
-        tag = "go_source",
+        tag = "source",
         srcs = [srcs],
         cmd = '\n'.join([
             'for i in $SRCS/*.go; do ',
@@ -139,6 +139,7 @@ def go_downloaded_source(name:str, srcs:str):
             '     fi ',
             'done ']),
         output_dirs = ["_out/"],
+        output_is_complete = True,
     )
 
 def go_module_compile(name:str, module:str, src:str, deps:list=[], install:list=None,

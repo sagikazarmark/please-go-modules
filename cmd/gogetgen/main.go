@@ -66,7 +66,7 @@ func main() {
 
 	for _, module := range moduleList {
 		if *genpkg {
-			filePath := path.Dir(module.Module.Path)
+			filePath := module.Module.Path
 
 			// Get (and create) file
 			file, ok := files[filePath]
@@ -86,20 +86,19 @@ func main() {
 			}
 
 			name := path.Base(module.Module.Path)
-			visibility := fmt.Sprintf("//%s/...", path.Dir(module.Module.Path))
+			visibility := fmt.Sprintf("\n    visibility = [\"//%s/...\"],\n", path.Join(*dir, module.Module.Path))
 
 			if *dir == "" {
 				name = strings.Replace(module.Module.Path, "/", "_", -1)
-				visibility = "PRIVATE"
+				visibility = ""
 			}
 
 			file += fmt.Sprintf(`go_module_download(
     name = "%s",
-    tag = "source",
+    tag = "download",
     module = "%s",
     version = "%s",
-    sum = "%s",
-    visibility = ["%s"],%s
+    sum = "%s",%s%s
 )`+"\n",
 				name,
 				module.Module.Path,
@@ -113,7 +112,7 @@ func main() {
 			files[filePath] = file
 
 			for _, pkg := range module.Packages {
-				filePath := path.Dir(pkg.ImportPath)
+				filePath := pkg.ImportPath
 
 				// Get (and create) file
 				file, ok := files[filePath]
@@ -128,26 +127,30 @@ func main() {
 
 				// This isn't the root package, so we need to fetch the source
 				if module.Module.Path != pkg.ImportPath {
-					moduleSource := fmt.Sprintf("//%s:_%s#source", path.Join(*dir, path.Dir(module.Module.Path)), path.Base(module.Module.Path))
+					moduleSource := fmt.Sprintf("//%s:_%s#download", path.Join(*dir, module.Module.Path), path.Base(module.Module.Path))
 					if *dir == "" {
-						moduleSource = fmt.Sprintf(":_%s#source", strings.Replace(module.Module.Path, "/", "_", -1))
+						moduleSource = fmt.Sprintf(":_%s#download", strings.Replace(module.Module.Path, "/", "_", -1))
 					}
 
-					file += fmt.Sprintf(`filegroup(
-    name = "%s",
-    tag = "source",
-    srcs = "%s",
+					packageSource := path.Join(*dir, module.Module.Path, "src", pkg.ImportPath)
+
+					// TODO: need to pass specific go files for the package
+					file += fmt.Sprintf(`build_rule(
+	name = "%s",
+	tag = "source",
+    cmd = "",
     deps = ["%s"],
-    visibility = ["PRIVATE"],
+	output_dirs = ["%s"],
     output_is_complete = True,
 )`+"\n",
 						name,
-						"", // TODO: find go files for the package
 						moduleSource,
+						packageSource,
 					)
+				} else {
+					// TODO: need to pass specific go files for the package
+					file += fmt.Sprintf(`go_downloaded_source("%[1]s", ":_%[1]s#download")`+"\n", name)
 				}
-
-				install := fmt.Sprintf("%q", strings.TrimPrefix(strings.TrimPrefix(pkg.ImportPath, module.Module.Path), "/"))
 
 				var deps []string
 				for _, depPath := range pkg.Imports {
@@ -159,35 +162,25 @@ func main() {
 						continue
 					}
 
-					if modMap[depMap[depPath].Module.Path].ResolvePackages {
-						if path.Dir(pkg.ImportPath) == path.Dir(depPath) {
-							deps = append(deps, fmt.Sprintf("%q", ":"+path.Base(depPath)))
-						} else {
-							deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s:%s", path.Join(*dir, path.Dir(depPath)), path.Base(depPath))))
-						}
-					} else {
-						if path.Dir(pkg.ImportPath) == path.Dir(depMap[depPath].Module.Path) {
-							deps = append(deps, fmt.Sprintf("%q", ":"+path.Base(depMap[depPath].Module.Path)))
-						} else if *dir == "" {
-							deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(depMap[depPath].Module.Path, "/", "_", -1)))
-						} else {
-							deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s:%s", path.Join(*dir, path.Dir(depMap[depPath].Module.Path)), path.Base(depMap[depPath].Module.Path))))
-						}
+					if *dir == "" {
+						deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(depPath, "/", "_", -1)))
+
+						continue
 					}
+
+					deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s", path.Join(*dir, depPath))))
 				}
 
-				file += fmt.Sprintf(`go_get(
+				file += fmt.Sprintf(`go_library(
     name = "%s",
-    module = "%s",
-	install = [%s],
-	src = %s,
+    srcs = [":_%[1]s#source"],
+    visibility = ["PUBLIC"],
     deps = [%s],
+    _import_path = "%s",
 )`+"\n",
 					name,
-					module.Module.Path,
-					install,
-					fmt.Sprintf("%q", fmt.Sprintf("//%s:_%s#download", path.Join(*dir, path.Dir(module.Module.Path)), path.Base(module.Module.Path))),
 					strings.Join(deps, ", "),
+					pkg.ImportPath,
 				)
 
 				files[filePath] = file

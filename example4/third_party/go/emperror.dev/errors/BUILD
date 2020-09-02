@@ -1,10 +1,10 @@
 go_module_download(
     name = "errors",
-    tag = "download",
     module = "emperror.dev/errors",
-    version = "v0.7.0",
     sum = "h1:vf0gZ0j9BJCXQYm0M21DPKeXy9PUjvX1YHXhNzIsqOY=",
-    visibility = ["//example3/..."],
+    tag = "download",
+    version = "v0.7.0",
+    visibility = ["//third_party/go/emperror.dev/errors/..."],
 )
 
 go_downloaded_source("errors", ":_errors#download")
@@ -12,10 +12,10 @@ go_downloaded_source("errors", ":_errors#download")
 go_library(
     name = "errors",
     srcs = [":_errors#source"],
+    _import_path = "emperror.dev/errors",
     visibility = ["PUBLIC"],
     deps = [
-        "//example3/github.com/pkg/errors",
-        "//example3/go.uber.org/multierr",
+        "//third_party/go/github.com/pkg/errors",
+        "//third_party/go/go.uber.org/multierr",
     ],
-    _import_path = "emperror.dev/errors",
 )
