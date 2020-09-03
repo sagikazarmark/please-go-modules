@@ -124,14 +124,14 @@ def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=
         licences = licences,
     )
 
-def go_downloaded_source(name:str, srcs:str):
+def go_downloaded_source(name:str, srcs:str, subpath:str=""):
     """Filters re-exports its srcs filtering on the provided extension"""
     return build_rule(
         name = name,
         tag = "source",
         srcs = [srcs],
         cmd = '\n'.join([
-            'for i in $SRCS/*.go; do ',
+            'for i in $SRCS/*.go; do ' if subpath == "" else f'for i in $SRCS/{subpath}/*.go; do ',
             '   if [[ "$i" != *_test.go ]]; then ',
             #'        mkdir -p _out/$(dirname $i) ',
             #'        mv $i _out/$i ',

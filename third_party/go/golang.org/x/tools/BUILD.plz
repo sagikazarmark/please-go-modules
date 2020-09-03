@@ -1,0 +1,8 @@
+go_module_download(
+    name = "tools",
+    module = "golang.org/x/tools",
+    sum = "h1:x4Two2lSwHxTqR+eal4lB4ydUnTvmDDpPQeL92ZHDgA=",
+    tag = "download",
+    version = "v0.0.0-20200708003708-134513de8882",
+    visibility = ["//third_party/go/golang.org/x/tools/..."],
+)

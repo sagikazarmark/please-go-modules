@@ -132,21 +132,8 @@ func main() {
 						moduleSource = fmt.Sprintf(":_%s#download", strings.Replace(module.Module.Path, "/", "_", -1))
 					}
 
-					packageSource := path.Join(*dir, module.Module.Path, "src", pkg.ImportPath)
-
 					// TODO: need to pass specific go files for the package
-					file += fmt.Sprintf(`build_rule(
-	name = "%s",
-	tag = "source",
-    cmd = "",
-    deps = ["%s"],
-	output_dirs = ["%s"],
-    output_is_complete = True,
-)`+"\n",
-						name,
-						moduleSource,
-						packageSource,
-					)
+					file += fmt.Sprintf(`go_downloaded_source("%s", "%s", "%s")`+"\n", name, moduleSource, strings.TrimPrefix(pkg.ImportPath, module.Module.Path+"/"))
 				} else {
 					// TODO: need to pass specific go files for the package
 					file += fmt.Sprintf(`go_downloaded_source("%[1]s", ":_%[1]s#download")`+"\n", name)
@@ -395,7 +382,7 @@ func main() {
 	sort.Strings(filePaths)
 
 	for filePath, fileContent := range files {
-		buildFile, err := build.ParseBuild("BUILD", []byte(fileContent))
+		buildFile, err := build.ParseBuild("BUILD.plz", []byte(fileContent))
 		if err != nil {
 			panic(err)
 		}
@@ -412,7 +399,7 @@ func main() {
 			for _, filePath := range filePaths {
 				file := files[filePath]
 
-				fmt.Printf("%s:\n\n%s", path.Join(*dir, filePath, "BUILD"), file)
+				fmt.Printf("%s:\n\n%s", path.Join(*dir, filePath, "BUILD.plz"), file)
 			}
 		} else {
 			if filepath.IsAbs(*dir) {
@@ -441,12 +428,12 @@ func main() {
 					panic(err)
 				}
 
-				file, err := os.OpenFile(path.Join(dirPath, "BUILD"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+				file, err := os.OpenFile(path.Join(dirPath, "BUILD.plz"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 				if err != nil {
 					panic(err)
 				}
 
-				buildFile, err := build.ParseBuild("BUILD", []byte(files[filePath]))
+				buildFile, err := build.ParseBuild("BUILD.plz", []byte(files[filePath]))
 				if err != nil {
 					panic(err)
 				}

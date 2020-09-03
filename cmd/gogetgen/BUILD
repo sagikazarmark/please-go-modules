@@ -6,6 +6,6 @@ go_binary(
         "//pkg/golist",
         "//pkg/modgraph",
         "//pkg/sumfile",
-        "//third_party/go/github.com/bazelbuild:buildtools",
+        "//third_party/go/github.com/bazelbuild/buildtools/build",
     ],
 )

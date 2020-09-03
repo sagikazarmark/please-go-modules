@@ -1,0 +1,9 @@
+go_downloaded_source("vcs", "//third_party/go/golang.org/x/tools:_tools#download", "go/vcs")
+
+go_library(
+    name = "vcs",
+    srcs = [":_vcs#source"],
+    import_path = "golang.org/x/tools/go/vcs",
+    visibility = ["PUBLIC"],
+    deps = [],
+)

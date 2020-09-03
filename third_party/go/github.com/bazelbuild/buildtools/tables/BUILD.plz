@@ -1,0 +1,9 @@
+go_downloaded_source("tables", "//third_party/go/github.com/bazelbuild/buildtools:_buildtools#download", "tables")
+
+go_library(
+    name = "tables",
+    srcs = [":_tables#source"],
+    import_path = "github.com/bazelbuild/buildtools/tables",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
