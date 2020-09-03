@@ -1,21 +1,7 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	logrusadapter "logur.dev/adapter/logrus"
-	"logur.dev/logur"
-
-	"github.com/sagikazarmark/please-go-modules/example/lib"
-)
-
-var _ = errors.New("")
+import _ "emperror.dev/errors/match"
 
 func main() {
-	_ = logur.NewNoopLogger()
-	_ = logrusadapter.New(logrus.New())
 
-	fmt.Println(lib.HelloWorld)
 }
