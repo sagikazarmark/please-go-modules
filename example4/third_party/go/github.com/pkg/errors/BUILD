@@ -12,7 +12,7 @@ go_downloaded_source("errors", ":_errors#download")
 go_library(
     name = "errors",
     srcs = [":_errors#source"],
-    _import_path = "github.com/pkg/errors",
+    import_path = "github.com/pkg/errors",
     visibility = ["PUBLIC"],
     deps = [],
 )

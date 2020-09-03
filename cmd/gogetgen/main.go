@@ -176,7 +176,7 @@ func main() {
     srcs = [":_%[1]s#source"],
     visibility = ["PUBLIC"],
     deps = [%s],
-    _import_path = "%s",
+    import_path = "%s",
 )`+"\n",
 					name,
 					strings.Join(deps, ", "),

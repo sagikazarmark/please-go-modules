@@ -12,7 +12,7 @@ go_downloaded_source("errors", ":_errors#download")
 go_library(
     name = "errors",
     srcs = [":_errors#source"],
-    _import_path = "emperror.dev/errors",
+    import_path = "emperror.dev/errors",
     visibility = ["PUBLIC"],
     deps = [
         "//third_party/go/github.com/pkg/errors",

@@ -12,7 +12,7 @@ go_downloaded_source("multierr", ":_multierr#download")
 go_library(
     name = "multierr",
     srcs = [":_multierr#source"],
-    _import_path = "go.uber.org/multierr",
+    import_path = "go.uber.org/multierr",
     visibility = ["PUBLIC"],
     deps = ["//third_party/go/go.uber.org/atomic"],
 )

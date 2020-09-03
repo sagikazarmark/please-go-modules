@@ -10,7 +10,7 @@ build_rule(
 go_library(
     name = "match",
     srcs = [":_match#source"],
-    _import_path = "emperror.dev/errors/match",
+    import_path = "emperror.dev/errors/match",
     visibility = ["PUBLIC"],
     deps = ["//third_party/go/emperror.dev/errors"],
 )
