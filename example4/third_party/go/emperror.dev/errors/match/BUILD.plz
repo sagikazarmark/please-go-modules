@@ -1,0 +1,9 @@
+go_downloaded_source("match", "//example4/third_party/go/emperror.dev/errors:_errors#download", "match")
+
+go_library(
+    name = "match",
+    srcs = [":_match#source"],
+    import_path = "emperror.dev/errors/match",
+    visibility = ["PUBLIC"],
+    deps = ["//example4/third_party/go/emperror.dev/errors"],
+)
