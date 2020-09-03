@@ -11,4 +11,5 @@ go_library(
     name = "atomic",
     srcs = [go_downloaded_source("atomic", ":_atomic#download")],
     visibility = ["PUBLIC"],
+    _import_path = "go.uber.org/atomic",
 )

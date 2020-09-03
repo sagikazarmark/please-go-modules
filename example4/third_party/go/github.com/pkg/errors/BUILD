@@ -1,0 +1,18 @@
+go_module_download(
+    name = "errors",
+    module = "github.com/pkg/errors",
+    sum = "h1:J8lpUdobwIeCI7OiSxHqEwJUKvJwicL5+3v1oe2Yb4k=",
+    tag = "download",
+    version = "v0.9.0",
+    visibility = ["//third_party/go/github.com/pkg/errors/..."],
+)
+
+go_downloaded_source("errors", ":_errors#download")
+
+go_library(
+    name = "errors",
+    srcs = [":_errors#source"],
+    import_path = "github.com/pkg/errors",
+    visibility = ["PUBLIC"],
+    deps = [],
+)

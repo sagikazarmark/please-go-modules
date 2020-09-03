@@ -11,4 +11,5 @@ go_library(
     name = "errors",
     srcs = [go_downloaded_source("errors", ":_errors#download")],
     visibility = ["PUBLIC"],
+    _import_path = "github.com/pkg/errors",
 )
