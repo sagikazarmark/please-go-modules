@@ -4,7 +4,7 @@ go_module_download(
     sum = "h1:f3WCSC2KzAcBXGATIxAB1E2XuCpNU255wNKZ505qi3E=",
     tag = "download",
     version = "v1.4.0",
-    visibility = ["//example4/third_party/go/go.uber.org/multierr/..."],
+    visibility = ["//example/third_party/go/go.uber.org/multierr/..."],
 )
 
 go_downloaded_source("multierr", ":_multierr#download")
@@ -14,5 +14,5 @@ go_library(
     srcs = [":_multierr#source"],
     import_path = "go.uber.org/multierr",
     visibility = ["PUBLIC"],
-    deps = ["//example4/third_party/go/go.uber.org/atomic"],
+    deps = ["//example/third_party/go/go.uber.org/atomic"],
 )

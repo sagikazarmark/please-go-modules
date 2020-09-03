@@ -7,5 +7,5 @@ moddown_binary(
 go_binary(
     name = "example4",
     srcs = ["main.go"],
-    deps = ["//third_party/go/emperror.dev/errors/match"],
+    deps = ["//example/third_party/go/emperror.dev/errors/match"],
 )
