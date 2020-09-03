@@ -5,6 +5,6 @@ go_binary(
     deps = [
         "//pkg/golist",
         "//pkg/modgraph",
-        "//third_party/go/github.com/bazelbuild:buildtools",
+        "//third_party/go/github.com/bazelbuild/buildtools/build",
     ],
 )
