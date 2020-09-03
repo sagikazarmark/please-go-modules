@@ -4,7 +4,6 @@ version = 15.2.1-beta.1
 [parse]
 #preloadbuilddefs = build_defs/go.build_defs
 preloadbuilddefs = build_defs/go_module.build_defs
-#preloadbuilddefs = build_defs/vendor.build_defs
 
 [go]
 importpath = github.com/sagikazarmark/please-go-modules/example4
