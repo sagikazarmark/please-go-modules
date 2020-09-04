@@ -7,11 +7,20 @@ go_module_download(
     visibility = ["//example/third_party/go/go.uber.org/atomic/..."],
 )
 
-go_downloaded_source("atomic", ":_atomic#download")
+fileexport(
+    name = "atomic",
+    srcs = [
+        "atomic.go",
+        "error.go",
+        "string.go",
+    ],
+    tag = "go_source",
+    deps = [":_atomic#download"],
+)
 
 go_library(
     name = "atomic",
-    srcs = [":_atomic#source"],
+    srcs = [":_atomic#go_source"],
     import_path = "go.uber.org/atomic",
     visibility = ["PUBLIC"],
     deps = [],
