@@ -77,6 +77,7 @@ cgo_library(
         "-DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1",
         "-DSQLITE_ENABLE_UPDATE_DELETE_LIMIT",
         "-Wno-deprecated-declarations",
+        "-I ${PKG}",
     ],
     go_srcs = [":_go-sqlite3#go_source"],
     import_path = "github.com/mattn/go-sqlite3",

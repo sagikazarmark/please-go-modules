@@ -231,6 +231,8 @@ func main() {
 					for _, cf := range pkg.CgoCFLAGS {
 						// We don't want include paths
 						if strings.HasPrefix(cf, "-I") {
+							cgocflags = append(cgocflags, `"-I ${PKG}"`)
+
 							continue
 						}
 
