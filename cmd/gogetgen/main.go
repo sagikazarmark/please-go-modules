@@ -155,6 +155,27 @@ func main() {
 					moduleSource,
 				)
 
+				isAsm := len(pkg.SFiles) > 0
+
+				if isAsm {
+
+					var sfiles []string
+					for _, gf := range pkg.SFiles {
+						sfiles = append(sfiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
+					}
+
+					file += fmt.Sprintf(`fileexport(
+    name = "%s",
+    tag = "s_source",
+    srcs = [%s],
+    deps = ["%s"],
+)`+"\n",
+						name,
+						strings.Join(sfiles, ", "),
+						moduleSource,
+					)
+				}
+
 				isCgo := len(pkg.CgoFiles) > 0
 
 				if isCgo {
@@ -263,14 +284,20 @@ func main() {
 						pkg.ImportPath,
 					)
 				} else {
+					var asm string
+					if isAsm {
+						asm = fmt.Sprintf("\n    asm_srcs = [\":_%s#s_source\"],\n", name)
+					}
+
 					file += fmt.Sprintf(`go_library(
     name = "%s",
-    srcs = [":_%[1]s#go_source"],
+    srcs = [":_%[1]s#go_source"],%s
     visibility = ["PUBLIC"],
     deps = [%s],
     import_path = "%s",
 )`+"\n",
 						name,
+						asm,
 						strings.Join(deps, ", "),
 						pkg.ImportPath,
 					)
