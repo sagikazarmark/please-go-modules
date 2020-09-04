@@ -125,18 +125,86 @@ func main() {
 					name = strings.Replace(pkg.ImportPath, "/", "_", -1)
 				}
 
+				var moduleSource, packageSource string
+
 				// This isn't the root package, so we need to fetch the source
 				if module.Module.Path != pkg.ImportPath {
-					moduleSource := fmt.Sprintf("//%s:_%s#download", path.Join(*dir, module.Module.Path), path.Base(module.Module.Path))
+					moduleSource = fmt.Sprintf("//%s:_%s#download", path.Join(*dir, module.Module.Path), path.Base(module.Module.Path))
 					if *dir == "" {
 						moduleSource = fmt.Sprintf(":_%s#download", strings.Replace(module.Module.Path, "/", "_", -1))
 					}
 
-					// TODO: need to pass specific go files for the package
-					file += fmt.Sprintf(`go_downloaded_source("%s", "%s", "%s")`+"\n", name, moduleSource, strings.TrimPrefix(pkg.ImportPath, module.Module.Path+"/"))
+					packageSource = strings.TrimPrefix(pkg.ImportPath, module.Module.Path+"/")
 				} else {
-					// TODO: need to pass specific go files for the package
-					file += fmt.Sprintf(`go_downloaded_source("%[1]s", ":_%[1]s#download")`+"\n", name)
+					moduleSource = fmt.Sprintf(":_%s#download", name)
+				}
+
+				var gofiles []string
+				for _, gf := range pkg.GoFiles {
+					gofiles = append(gofiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
+				}
+
+				file += fmt.Sprintf(`fileexport(
+    name = "%s",
+    tag = "go_source",
+    srcs = [%s],
+    deps = ["%s"],
+)`+"\n",
+					name,
+					strings.Join(gofiles, ", "),
+					moduleSource,
+				)
+
+				isCgo := len(pkg.CgoFiles) > 0
+
+				if isCgo {
+					var cgofiles []string
+					for _, gf := range pkg.CgoFiles {
+						cgofiles = append(cgofiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
+					}
+
+					file += fmt.Sprintf(`fileexport(
+    name = "%s",
+    tag = "cgo_source",
+    srcs = [%s],
+    deps = ["%s"],
+)`+"\n",
+						name,
+						strings.Join(cgofiles, ", "),
+						moduleSource,
+					)
+
+					var cfiles []string
+					for _, gf := range pkg.CFiles {
+						cfiles = append(cfiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
+					}
+
+					file += fmt.Sprintf(`fileexport(
+    name = "%s",
+    tag = "c_source",
+    srcs = [%s],
+    deps = ["%s"],
+)`+"\n",
+						name,
+						strings.Join(cfiles, ", "),
+						moduleSource,
+					)
+
+					var hfiles []string
+					for _, gf := range pkg.HFiles {
+						hfiles = append(hfiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
+					}
+
+					file += fmt.Sprintf(`fileexport(
+    name = "%s",
+    tag = "h_source",
+    srcs = [%s],
+    deps = ["%s"],
+)`+"\n",
+						name,
+						strings.Join(hfiles, ", "),
+						moduleSource,
+					)
 				}
 
 				var deps []string
@@ -158,17 +226,55 @@ func main() {
 					deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s", path.Join(*dir, depPath))))
 				}
 
-				file += fmt.Sprintf(`go_library(
+				if isCgo {
+					var cgocflags []string
+					for _, cf := range pkg.CgoCFLAGS {
+						// We don't want include paths
+						if strings.HasPrefix(cf, "-I") {
+							cgocflags = append(cgocflags, `"-I ${PKG}"`)
+
+							continue
+						}
+
+						cgocflags = append(cgocflags, fmt.Sprintf("%q", cf))
+					}
+
+					var cgoldflags []string
+					for _, cf := range pkg.CgoLDFLAGS {
+						cgoldflags = append(cgoldflags, fmt.Sprintf("%q", cf))
+					}
+
+					file += fmt.Sprintf(`cgo_library(
     name = "%s",
-    srcs = [":_%[1]s#source"],
+    srcs = [":_%[1]s#cgo_source"],
+    go_srcs = [":_%[1]s#go_source"],
+    c_srcs = [":_%[1]s#c_source"],
+	hdrs = [":_%[1]s#h_source"],
+	compiler_flags = [%s],
+    linker_flags = [%s],
     visibility = ["PUBLIC"],
     deps = [%s],
     import_path = "%s",
 )`+"\n",
-					name,
-					strings.Join(deps, ", "),
-					pkg.ImportPath,
-				)
+						name,
+						strings.Join(cgocflags, ", "),
+						strings.Join(cgoldflags, ", "),
+						strings.Join(deps, ", "),
+						pkg.ImportPath,
+					)
+				} else {
+					file += fmt.Sprintf(`go_library(
+    name = "%s",
+    srcs = [":_%[1]s#go_source"],
+    visibility = ["PUBLIC"],
+    deps = [%s],
+    import_path = "%s",
+)`+"\n",
+						name,
+						strings.Join(deps, ", "),
+						pkg.ImportPath,
+					)
+				}
 
 				files[filePath] = file
 			}
