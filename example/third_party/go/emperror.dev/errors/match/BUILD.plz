@@ -1,3 +1,5 @@
+subinclude("//build_defs")
+
 fileexport(
     name = "match",
     srcs = ["match/match.go"],

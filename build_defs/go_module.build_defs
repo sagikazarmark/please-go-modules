@@ -1,37 +1,3 @@
-def moddown_binary(name:str, version:str, hashes:list=None, out:str="",
-                   visibility:list=None, test_only:bool&testonly=False, host:bool=True):
-    """Downloads a precompiled moddown binary.
-
-    Args:
-      name (str): Name of the rule.
-      version (str): Version of the binary to download.
-      hashes (list): Hashes to verify the download against.
-      out (str): Output name of the binary. Chosen automatically if not given.
-      visibility (list): Visibility declaration of the rule.
-      test_only (bool): If true the rule will only be visible to test targets.
-      host (bool): If true the rule will always target the host OS and Arch.
-    """
-
-    os = CONFIG.HOSTOS if host else CONFIG.OS
-    arch = CONFIG.HOSTARCH if host else CONFIG.ARCH
-
-    return genrule(
-        name = name,
-        srcs = [remote_file(
-            name = name,
-            _tag = "download",
-            url = f"https://github.com/sagikazarmark/moddown/releases/download/v{version}/moddown_{os}_{arch}.tar.gz",
-            hashes = hashes,
-            out = f"moddown-{version}-{os}-{arch}.tar.gz",
-        )],
-        outs = [out or "moddown"],
-        binary = True,
-        cmd = '"$TOOL" x "$SRCS" moddown -o tmp && mv $(find tmp -name "moddown") "$OUT"',
-        tools = [CONFIG.JARCAT_TOOL],
-        visibility = visibility,
-        test_only = test_only,
-    )
-
 CONFIG.setdefault("MODDOWN_TOOL", "//:moddown")
 
 def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=None, replace:str=None, deps:list=[],

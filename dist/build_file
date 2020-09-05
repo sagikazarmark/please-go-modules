@@ -1,0 +1,19 @@
+export_file(
+    name = "build_defs",
+    src = "go_module.build_defs",
+    visibility = ["PUBLIC"],
+)
+
+export_file(
+    name = "gogetgen",
+    src = "gogetgen",
+    visibility = ["PUBLIC"],
+    binary = True,
+)
+
+export_file(
+    name = "moddown",
+    src = "moddown",
+    visibility = ["PUBLIC"],
+    binary = True,
+)
