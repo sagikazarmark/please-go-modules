@@ -12,6 +12,7 @@ go_module_download(
 fileexport(
     name = "errors",
     srcs = [
+        "cause.go",
         "errors.go",
         "go113.go",
         "stack.go",
