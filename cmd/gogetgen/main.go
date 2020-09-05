@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go/build"
 	"log"
 	"os"
 	"path"
@@ -10,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bazelbuild/buildtools/build"
+	buildify "github.com/bazelbuild/buildtools/build"
 
 	"github.com/sagikazarmark/please-go-modules/pkg/golist"
 	"github.com/sagikazarmark/please-go-modules/pkg/modgraph"
@@ -18,14 +19,32 @@ import (
 )
 
 var (
-	stdout     = flag.Bool("stdout", false, "Dump rules to the standard output")
-	dir        = flag.String("dir", "", "Dump rules into a directory")
-	dryRun     = flag.Bool("dry-run", false, "Do not write anything to file")
-	clean      = flag.Bool("clean", false, "Clean target before generating new rules")
-	genpkg     = flag.Bool("genpkg", false, "Generate build targets for each package")
-	subinclude = flag.String("subinclude", "", "Include a rule in each file. (Useful when you don't want to duplicate the build definitions)")
-	base       = flag.String("base", "", "Prepend this path to the directory")
+	stdout              = flag.Bool("stdout", false, "Dump rules to the standard output")
+	dir                 = flag.String("dir", "", "Dump rules into a directory")
+	dryRun              = flag.Bool("dry-run", false, "Do not write anything to file")
+	clean               = flag.Bool("clean", false, "Clean target before generating new rules")
+	genpkg              = flag.Bool("genpkg", false, "Generate build targets for each package")
+	subinclude          = flag.String("subinclude", "", "Include a rule in each file. (Useful when you don't want to duplicate the build definitions)")
+	base                = flag.String("base", "", "Prepend this path to the directory")
+	disableOptimization = flag.Bool("disable-optimization", false, "Disable build file optimization to debug code generator issues")
 )
+
+var supportedOSes = []string{"linux", "darwin"}
+
+func selectOSes() ([]string, string) {
+	cos := build.Default.GOOS
+
+	var oses []string
+	for _, sos := range supportedOSes {
+		if cos == sos {
+			continue
+		}
+
+		oses = append(oses, sos)
+	}
+
+	return oses, cos
+}
 
 func main() {
 	flag.Parse()
@@ -70,6 +89,9 @@ func main() {
 	if *dir != "" {
 		ruleDir = path.Join(*base, *dir)
 	}
+
+	var generateOsConfig bool
+	alternateOSes, currentOS := selectOSes()
 
 	for _, module := range moduleList {
 		if *genpkg {
@@ -203,6 +225,8 @@ func main() {
 				isCgo := len(pkg.CgoFiles) > 0
 
 				if isCgo {
+					generateOsConfig = true
+
 					var cgofiles []string
 					for _, gf := range pkg.CgoFiles {
 						cgofiles = append(cgofiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
@@ -272,7 +296,10 @@ func main() {
 				}
 
 				if isCgo {
-					var cgocflags []string
+					cgocflags := map[string][]string{
+						currentOS: []string{},
+					}
+
 					for _, cf := range pkg.CgoCFLAGS {
 						// Some libraries add . to the list of include paths
 						// Replace it with PKG, ommit the rest
@@ -281,18 +308,88 @@ func main() {
 							// Module or import path reference
 							if strings.Contains(cf, fmt.Sprintf("pkg/mod/%s", module.Module.Path)) ||
 								strings.Contains(cf, pkg.ImportPath) {
-								cgocflags = append(cgocflags, `"-I ${PKG}"`)
+								cgocflags[currentOS] = append(cgocflags[currentOS], `"-I ${PKG}"`)
 							}
 
 							continue
 						}
 
-						cgocflags = append(cgocflags, fmt.Sprintf("%q", cf))
+						cgocflags[currentOS] = append(cgocflags[currentOS], fmt.Sprintf("%q", cf))
 					}
 
-					var cgoldflags []string
+					for _, os := range alternateOSes {
+						ctxt := build.Default
+						ctxt.GOOS = os
+						ctxt.CgoEnabled = true
+
+						osPkg, err := ctxt.ImportDir(pkg.Dir, build.ImportComment)
+						if err != nil {
+							panic(err)
+						}
+
+						cgocflags[os] = make([]string, 0, len(osPkg.CgoCFLAGS))
+						for _, f := range osPkg.CgoCFLAGS {
+							// Some libraries add . to the list of include paths
+							// Replace it with PKG, ommit the rest
+							// TODO: log ommited flags
+							if strings.HasPrefix(f, "-I") {
+								// Module or import path reference
+								if strings.Contains(f, fmt.Sprintf("pkg/mod/%s", module.Module.Path)) ||
+									strings.Contains(f, pkg.ImportPath) {
+									cgocflags[os] = append(cgocflags[os], `"-I ${PKG}"`)
+								}
+
+								continue
+							}
+
+							cgocflags[os] = append(cgocflags[os], fmt.Sprintf("%q", f))
+						}
+					}
+
+					var cgocflagsselect string
+					for os, fs := range cgocflags {
+						cgocflagsselect += fmt.Sprintf("\n"+`        "//%s:%s": [`+"\n", path.Join(ruleDir, "__config"), os)
+
+						for _, f := range fs {
+							cgocflagsselect += fmt.Sprintf(`            %s, `+"\n", f)
+						}
+
+						cgocflagsselect += "        ],\n    "
+					}
+
+					cgoldflags := map[string][]string{
+						currentOS: []string{},
+					}
+
 					for _, cf := range pkg.CgoLDFLAGS {
-						cgoldflags = append(cgoldflags, fmt.Sprintf("%q", cf))
+						cgoldflags[currentOS] = append(cgoldflags[currentOS], fmt.Sprintf("%q", cf))
+					}
+
+					for _, os := range alternateOSes {
+						ctxt := build.Default
+						ctxt.GOOS = os
+						ctxt.CgoEnabled = true
+
+						osPkg, err := ctxt.ImportDir(pkg.Dir, build.ImportComment)
+						if err != nil {
+							panic(err)
+						}
+
+						cgoldflags[os] = make([]string, 0, len(osPkg.CgoLDFLAGS))
+						for _, f := range osPkg.CgoLDFLAGS {
+							cgoldflags[os] = append(cgoldflags[os], fmt.Sprintf("%q", f))
+						}
+					}
+
+					var cgoldflagsselect string
+					for os, fs := range cgoldflags {
+						cgoldflagsselect += fmt.Sprintf("\n"+`        "//%s:%s": [`+"\n", path.Join(ruleDir, "__config"), os)
+
+						for _, f := range fs {
+							cgoldflagsselect += fmt.Sprintf(`            %s, `+"\n", f)
+						}
+
+						cgoldflagsselect += "        ],\n    "
 					}
 
 					file += fmt.Sprintf(`cgo_library(
@@ -300,16 +397,16 @@ func main() {
     srcs = [":_%[1]s#cgo_source"],
     go_srcs = [":_%[1]s#go_source"],
     c_srcs = [":_%[1]s#c_source"],
-	hdrs = [":_%[1]s#h_source"],
-	compiler_flags = [%s],
-    linker_flags = [%s],
+    hdrs = [":_%[1]s#h_source"],
+    compiler_flags = select({%s}),
+    linker_flags = select({%s}),
     visibility = ["PUBLIC"],
     deps = [%s],
     import_path = "%s",
 )`+"\n",
 						name,
-						strings.Join(cgocflags, ", "),
-						strings.Join(cgoldflags, ", "),
+						cgocflagsselect,
+						cgoldflagsselect,
 						strings.Join(deps, ", "),
 						pkg.ImportPath,
 					)
@@ -336,7 +433,7 @@ func main() {
 
 				files[filePath] = file
 			}
-		} else if module.ResolvePackages {
+		} else if module.ResolvePackages { // END OF CURRENTLY WORKING LOGIC
 			filePath := path.Dir(module.Module.Path)
 
 			file, ok := files[filePath]
@@ -543,15 +640,37 @@ func main() {
 		}
 	}
 
+	if generateOsConfig {
+		filePath := "__config"
+
+		// Get (or create) a file
+		file, ok := files[filePath]
+		if !ok {
+			file = `package(default_visibility = ["PUBLIC"])` + "\n\n"
+
+			filePaths = append(filePaths, filePath)
+		}
+
+		for _, os := range supportedOSes {
+			file += fmt.Sprintf(`config_setting(name = "%[1]s", values = {"os": "%[1]s"})`+"\n", os)
+		}
+		files[filePath] = file
+	}
+
 	sort.Strings(filePaths)
 
 	for filePath, fileContent := range files {
-		buildFile, err := build.ParseBuild("BUILD.plz", []byte(fileContent))
-		if err != nil {
-			panic(err)
+		buildFileContent := []byte(fileContent)
+		if !*disableOptimization {
+			buildFile, err := buildify.ParseBuild("BUILD.plz", buildFileContent)
+			if err != nil {
+				panic(err)
+			}
+
+			buildFileContent = buildify.Format(buildFile)
 		}
 
-		files[filePath] = string(build.Format(buildFile))
+		files[filePath] = string(buildFileContent)
 	}
 
 	if *stdout {
@@ -597,12 +716,18 @@ func main() {
 					panic(err)
 				}
 
-				buildFile, err := build.ParseBuild("BUILD.plz", []byte(files[filePath]))
-				if err != nil {
-					panic(err)
+				buildFileContent := []byte(files[filePath])
+
+				if !*disableOptimization {
+					buildFile, err := buildify.ParseBuild("BUILD.plz", []byte(files[filePath]))
+					if err != nil {
+						panic(err)
+					}
+
+					buildFileContent = buildify.Format(buildFile)
 				}
 
-				_, err = file.Write(build.Format(buildFile))
+				_, err = file.Write(buildFileContent)
 				if err != nil {
 					panic(err)
 				}
