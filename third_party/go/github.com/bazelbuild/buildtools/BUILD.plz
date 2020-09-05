@@ -1,3 +1,5 @@
+subinclude("//build_defs")
+
 go_module_download(
     name = "buildtools",
     module = "github.com/bazelbuild/buildtools",

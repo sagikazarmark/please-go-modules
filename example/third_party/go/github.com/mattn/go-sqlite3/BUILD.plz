@@ -1,3 +1,5 @@
+subinclude("//build_defs")
+
 go_module_download(
     name = "go-sqlite3",
     module = "github.com/mattn/go-sqlite3",

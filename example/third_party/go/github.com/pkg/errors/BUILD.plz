@@ -1,3 +1,5 @@
+subinclude("//build_defs")
+
 go_module_download(
     name = "errors",
     module = "github.com/pkg/errors",
