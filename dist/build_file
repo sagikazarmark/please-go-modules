@@ -1,6 +1,9 @@
-export_file(
+filegroup(
     name = "build_defs",
-    src = "go_module.build_defs",
+    srcs = [
+        "go_module.build_defs",
+        "go_rules.build_defs",
+    ],
     visibility = ["PUBLIC"],
 )
 
