@@ -63,9 +63,7 @@ def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=
 
     tools = {
         "go": [CONFIG.GO_TOOL],
-        #"moddown": [moddown_binary("moddown", "0.1.0")],
         "moddown": [CONFIG.MODDOWN_TOOL],
-        #"jq": [CONFIG.JQ_TOOL],
     }
 
     download_module = replace or module
@@ -80,20 +78,9 @@ def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=
     if sum: # The sum is provided so we don't have to look it up from sum DB
         cmd += ["export GOSUMDB=off"]
 
-    #cmd += [f'"$TOOLS_MODDOWN" -dest {dest} -sum={sum} {download_module}@{version}',]
-
-    cmd += [
-        #f'"$TOOLS_GO" mod download -x -modcacherw -json {download_module}@{version} > "$TMP_DIR/_module.json"',
-        #'! jq -e -r ".Error // empty" "$TMP_DIR/_module.json"',
-        #'export MODULE_ERROR=$(cat "$TMP_DIR/_module.json" | jq -r ".Error")',
-        #'if [ ! -z "$MODULE_ERROR" ]; then echo "$MODULE_ERROR" && exit 1; fi',
-        #f'cp -r $(jq -e -r ".Dir" "$TMP_DIR/_module.json")/. {dest}',
-    ]
-
     download_cmd = f'"$TOOLS_GO" mod download -x -modcacherw -json {download_module}@{version} | "$TOOLS_MODDOWN" -f - -dest {dest}'
 
     if sum: # The sum is provided so compare it
-        #cmd += [f'(if [ $(jq -e -r ".Sum" "$TMP_DIR/_module.json") != "{sum}" ]; then echo "verifying {download_module}@{version}: checksum mismatch\n        downloaded: $(jq -e -r ".Sum" "$TMP_DIR/_module.json")\n        sum:        {sum}"; exit 1; fi)']
         download_cmd += f" -sum {sum}"
 
     cmd += [download_cmd]
@@ -111,7 +98,6 @@ def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=
             "patch": [patch],
         },
         deps = deps,
-        #exported_deps = deps,
         outs = [dest],
         tools = tools,
         building_description = "Fetching...",
@@ -119,27 +105,9 @@ def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=
         requires = ["go"],
         test_only = test_only,
         visibility = visibility,
-        labels = labels + ["link:plz-out/go"],
+        labels = labels,
         sandbox = False,
         licences = licences,
-    )
-
-def go_downloaded_source(name:str, srcs:str, subpath:str=""):
-    """Filters re-exports its srcs filtering on the provided extension"""
-    return build_rule(
-        name = name,
-        tag = "source",
-        srcs = [srcs],
-        cmd = '\n'.join([
-            'for i in $SRCS/*.go; do ' if subpath == "" else f'for i in $SRCS/{subpath}/*.go; do ',
-            '   if [[ "$i" != *_test.go ]]; then ',
-            #'        mkdir -p _out/$(dirname $i) ',
-            #'        mv $i _out/$i ',
-            '        mv $i _out/ ',
-            '     fi ',
-            'done ']),
-        output_dirs = ["_out/"],
-        output_is_complete = True,
     )
 
 def fileexport(name:str, srcs:list, tag:str='', deps:list=None, exported_deps:list=None,
