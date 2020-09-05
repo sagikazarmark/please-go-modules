@@ -5,6 +5,32 @@ Experiments with [Please](https://please.build) and Go modules.
 
 ## Usage
 
+Add the following snippet to your `BUILD` file in the root of your repository:
+
+```starlark
+github_repo(
+    name = "pleasegomod",
+    repo = "sagikazarmark/please-go-modules",
+    revision = "master",
+)
+```
+
+> **Note:** Chances are this repo will change a LOT, so locking the revision to a specific commit is absolutely recommended.
+
+Add the following snippet to your `.plzconfig`:
+
+```
+[please]
+version = 15.2.1-beta.1
+
+[buildconfig]
+moddown-tool = ///pleasegomod//:moddown
+
+[alias "godeps"]
+desc = Generate third-party dependency rules for a Go project
+cmd = run ///pleasegomod//cmd/gogetgen -- -dir third_party/go -clean -genpkg -subinclude "///pleasegomod//build_defs"
+```
+
 The repo contains a set of build rules that can be used to download third-party Go module dependencies
 and then build them with the standard `go_library` rule.
 
