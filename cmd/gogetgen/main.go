@@ -18,11 +18,12 @@ import (
 )
 
 var (
-	stdout = flag.Bool("stdout", false, "Dump rules to the standard output")
-	dir    = flag.String("dir", "", "Dump rules into a directory")
-	dryRun = flag.Bool("dry-run", false, "Do not write anything to file")
-	clean  = flag.Bool("clean", false, "Clean target before generating new rules")
-	genpkg = flag.Bool("genpkg", false, "Generate build targets for each package")
+	stdout     = flag.Bool("stdout", false, "Dump rules to the standard output")
+	dir        = flag.String("dir", "", "Dump rules into a directory")
+	dryRun     = flag.Bool("dry-run", false, "Do not write anything to file")
+	clean      = flag.Bool("clean", false, "Clean target before generating new rules")
+	genpkg     = flag.Bool("genpkg", false, "Generate build targets for each package")
+	subinclude = flag.String("subinclude", "", "Include a rule in each file. (Useful when you don't want to duplicate the build definitions)")
 )
 
 func main() {
@@ -71,6 +72,10 @@ func main() {
 			// Get (and create) file
 			file, ok := files[filePath]
 			if !ok {
+				if *subinclude != "" {
+					file = fmt.Sprintf("subinclude(%q)\n\n", *subinclude)
+				}
+
 				filePaths = append(filePaths, filePath)
 			}
 
