@@ -8,21 +8,10 @@ Experiments with [Please](https://please.build) and Go modules.
 Add the following snippet to your `BUILD` file in the root of your repository:
 
 ```starlark
-pleasegomod_version = "0.0.2"
-remote_file(
-    name = "go_module",
-    url = f"https://raw.githubusercontent.com/sagikazarmark/please-go-modules/v{pleasegomod_version}/build_defs/go_module.build_defs",
-    visibility = ["PUBLIC"],
+http_archive(
+    name = "pleasegomod",
+    urls = ["https://github.com/sagikazarmark/please-go-modules/releases/download/v0.0.3/gogetgen_darwin_amd64.tar.gz"],
 )
-remote_file(
-    name = "gogetgen_def",
-    url = f"https://raw.githubusercontent.com/sagikazarmark/please-go-modules/v{pleasegomod_version}/build_defs/gogetgen.build_defs",
-)
-
-subinclude(":gogetgen_def", ":go_module")
-
-gogetgen_binary("gogetgen", pleasegomod_version)
-moddown_binary("moddown", "0.1.0", visibility = ["PUBLIC"])
 ```
 
 Add the following snippet to your `.plzconfig`:
@@ -32,11 +21,11 @@ Add the following snippet to your `.plzconfig`:
 version = 15.2.1-beta.1
 
 [buildconfig]
-moddown-tool = //:moddown
+moddown-tool = ///pleasegomod//:moddown
 
 [alias "godeps"]
 desc = Generate third-party dependency rules for a Go project
-cmd = run :gogetgen -- -dir third_party/go -clean -genpkg -subinclude "//:go_module"
+cmd = run ///pleasegomod//:gogetgen -- -dir third_party/go -clean -genpkg -subinclude "///pleasegomod//:build_defs"
 ```
 
 Run the following:
