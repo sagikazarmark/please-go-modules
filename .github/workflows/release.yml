@@ -23,7 +23,7 @@ jobs:
 
       # As of Go 1.15 GOROOT is not detected properly
       - name: Set Please overrides
-        run: echo "::set-env name=PLZ_OVERRIDES::go.goroot:$GOROOT"
+        run: echo "::set-env name=PLZ_OVERRIDES::go.goroot:$GOROOT;go.gotool:$GOROOT/bin/go"
 
       - name: Checkout code
         uses: actions/checkout@v2
