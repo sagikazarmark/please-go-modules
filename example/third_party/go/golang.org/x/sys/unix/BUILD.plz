@@ -51,6 +51,7 @@ go_library(
     name = "unix",
     srcs = [":_unix#go_source"],
     asm_srcs = [":_unix#s_source"],
+    cover = False,
     import_path = "golang.org/x/sys/unix",
     visibility = ["PUBLIC"],
     deps = ["//example/third_party/go/golang.org/x/sys/internal/unsafeheader"],

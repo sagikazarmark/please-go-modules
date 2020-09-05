@@ -13,6 +13,7 @@ fileexport(
 go_library(
     name = "tables",
     srcs = [":_tables#go_source"],
+    cover = False,
     import_path = "github.com/bazelbuild/buildtools/tables",
     visibility = ["PUBLIC"],
     deps = [],

@@ -301,7 +301,8 @@ func main() {
 					file += fmt.Sprintf(`go_library(
     name = "%s",
     srcs = [":_%[1]s#go_source"],%s
-    visibility = ["PUBLIC"],
+	visibility = ["PUBLIC"],
+	cover = False,
     deps = [%s],
     import_path = "%s",
 )`+"\n",
