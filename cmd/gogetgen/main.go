@@ -159,6 +159,15 @@ func main() {
 					gofiles = append(gofiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
 				}
 
+				// Include ignored files (required for cross-compilation)
+				for _, gf := range pkg.IgnoredGoFiles {
+					if strings.HasSuffix(gf, "_test.go") {
+						continue // Skip test files
+					}
+
+					gofiles = append(gofiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
+				}
+
 				file += fmt.Sprintf(`fileexport(
     name = "%s",
     tag = "go_source",
