@@ -119,9 +119,13 @@ func main() {
 			for _, pkg := range module.Packages {
 				filePath := pkg.ImportPath
 
-				// Get (and create) file
+				// Get (or create) a file
 				file, ok := files[filePath]
 				if !ok {
+					if *subinclude != "" {
+						file = fmt.Sprintf("subinclude(%q)\n\n", *subinclude)
+					}
+
 					filePaths = append(filePaths, filePath)
 				}
 
