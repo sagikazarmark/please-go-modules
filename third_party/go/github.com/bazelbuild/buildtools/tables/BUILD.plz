@@ -1,8 +1,16 @@
-go_downloaded_source("tables", "//third_party/go/github.com/bazelbuild/buildtools:_buildtools#download", "tables")
+fileexport(
+    name = "tables",
+    srcs = [
+        "tables/jsonparser.go",
+        "tables/tables.go",
+    ],
+    tag = "go_source",
+    deps = ["//third_party/go/github.com/bazelbuild/buildtools:_buildtools#download"],
+)
 
 go_library(
     name = "tables",
-    srcs = [":_tables#source"],
+    srcs = [":_tables#go_source"],
     import_path = "github.com/bazelbuild/buildtools/tables",
     visibility = ["PUBLIC"],
     deps = [],

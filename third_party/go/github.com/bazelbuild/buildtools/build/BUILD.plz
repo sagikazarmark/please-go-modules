@@ -1,8 +1,22 @@
-go_downloaded_source("build", "//third_party/go/github.com/bazelbuild/buildtools:_buildtools#download", "build")
+fileexport(
+    name = "build",
+    srcs = [
+        "build/lex.go",
+        "build/parse.y.go",
+        "build/print.go",
+        "build/quote.go",
+        "build/rewrite.go",
+        "build/rule.go",
+        "build/syntax.go",
+        "build/walk.go",
+    ],
+    tag = "go_source",
+    deps = ["//third_party/go/github.com/bazelbuild/buildtools:_buildtools#download"],
+)
 
 go_library(
     name = "build",
-    srcs = [":_build#source"],
+    srcs = [":_build#go_source"],
     import_path = "github.com/bazelbuild/buildtools/build",
     visibility = ["PUBLIC"],
     deps = ["//third_party/go/github.com/bazelbuild/buildtools/tables"],
