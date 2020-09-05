@@ -10,7 +10,7 @@ Add the following snippet to your `BUILD` file in the root of your repository:
 ```starlark
 http_archive(
     name = "pleasegomod",
-    urls = ["https://github.com/sagikazarmark/please-go-modules/releases/download/v0.0.3/gogetgen_darwin_amd64.tar.gz"],
+    urls = ["https://github.com/sagikazarmark/please-go-modules/releases/download/v0.0.4/gogetgen_darwin_amd64.tar.gz"],
 )
 ```
 
