@@ -274,9 +274,15 @@ func main() {
 				if isCgo {
 					var cgocflags []string
 					for _, cf := range pkg.CgoCFLAGS {
-						// We don't want include paths
+						// Some libraries add . to the list of include paths
+						// Replace it with PKG, ommit the rest
+						// TODO: log ommited flags
 						if strings.HasPrefix(cf, "-I") {
-							cgocflags = append(cgocflags, `"-I ${PKG}"`)
+							// Module or import path reference
+							if strings.Contains(cf, fmt.Sprintf("pkg/mod/%s", module.Module.Path)) ||
+								strings.Contains(cf, pkg.ImportPath) {
+								cgocflags = append(cgocflags, `"-I ${PKG}"`)
+							}
 
 							continue
 						}
