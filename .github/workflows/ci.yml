@@ -30,10 +30,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build
-        run: ./pleasew build -p //cmd/gogetgen :moddown
+        run: ./pleasew build -p ./...
 
       - name: Test
-        run: ./pleasew test -p //cmd/gogetgen
+        run: ./pleasew test -p ./...
 
       - name: Save Please log output
         uses: actions/upload-artifact@v1
