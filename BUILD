@@ -10,7 +10,7 @@ github_repo(
 
 tarball(
     name = "package",
-    srcs = ["README.md", "//cmd/gogetgen", ":moddown", "//build_defs"],
+    srcs = ["README.md", "//cmd/gogetgen"],
     out = f"gogetgen_{CONFIG.OS}_{CONFIG.ARCH}.tar.gz",
     gzip = True,
     labels = ["manual"],
