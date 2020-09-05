@@ -24,6 +24,7 @@ var (
 	clean      = flag.Bool("clean", false, "Clean target before generating new rules")
 	genpkg     = flag.Bool("genpkg", false, "Generate build targets for each package")
 	subinclude = flag.String("subinclude", "", "Include a rule in each file. (Useful when you don't want to duplicate the build definitions)")
+	base       = flag.String("base", "", "Prepend this path to the directory")
 )
 
 func main() {
@@ -65,6 +66,11 @@ func main() {
 	files := make(map[string]string)
 	var filePaths []string
 
+	var ruleDir string
+	if *dir != "" {
+		ruleDir = path.Join(*base, *dir)
+	}
+
 	for _, module := range moduleList {
 		if *genpkg {
 			filePath := module.Module.Path
@@ -91,9 +97,9 @@ func main() {
 			}
 
 			name := path.Base(module.Module.Path)
-			visibility := fmt.Sprintf("\n    visibility = [\"//%s/...\"],\n", path.Join(*dir, module.Module.Path))
+			visibility := fmt.Sprintf("\n    visibility = [\"//%s/...\"],\n", path.Join(ruleDir, module.Module.Path))
 
-			if *dir == "" {
+			if ruleDir == "" {
 				name = strings.Replace(module.Module.Path, "/", "_", -1)
 				visibility = ""
 			}
@@ -130,7 +136,7 @@ func main() {
 				}
 
 				name := path.Base(pkg.ImportPath)
-				if *dir == "" {
+				if ruleDir == "" {
 					name = strings.Replace(pkg.ImportPath, "/", "_", -1)
 				}
 
@@ -138,8 +144,8 @@ func main() {
 
 				// This isn't the root package, so we need to fetch the source
 				if module.Module.Path != pkg.ImportPath {
-					moduleSource = fmt.Sprintf("//%s:_%s#download", path.Join(*dir, module.Module.Path), path.Base(module.Module.Path))
-					if *dir == "" {
+					moduleSource = fmt.Sprintf("//%s:_%s#download", path.Join(ruleDir, module.Module.Path), path.Base(module.Module.Path))
+					if ruleDir == "" {
 						moduleSource = fmt.Sprintf(":_%s#download", strings.Replace(module.Module.Path, "/", "_", -1))
 					}
 
@@ -247,13 +253,13 @@ func main() {
 						continue
 					}
 
-					if *dir == "" {
+					if ruleDir == "" {
 						deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(depPath, "/", "_", -1)))
 
 						continue
 					}
 
-					deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s", path.Join(*dir, depPath))))
+					deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s", path.Join(ruleDir, depPath))))
 				}
 
 				if isCgo {
