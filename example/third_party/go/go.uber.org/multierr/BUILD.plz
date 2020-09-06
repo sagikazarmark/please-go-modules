@@ -9,7 +9,7 @@ go_module_download(
     visibility = ["//example/third_party/go/go.uber.org/multierr/..."],
 )
 
-fileexport(
+fileexport2(
     name = "multierr",
     srcs = [
         "error.go",

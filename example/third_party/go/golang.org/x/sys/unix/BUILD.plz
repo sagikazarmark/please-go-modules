@@ -1,6 +1,6 @@
 subinclude("//build_defs")
 
-fileexport(
+fileexport2(
     name = "unix",
     srcs = [
         "unix/affinity_linux.go",
@@ -269,7 +269,7 @@ fileexport(
     deps = ["//example/third_party/go/golang.org/x/sys:_sys#download"],
 )
 
-fileexport(
+fileexport2(
     name = "unix",
     srcs = [
         "unix/asm_darwin_amd64.s",

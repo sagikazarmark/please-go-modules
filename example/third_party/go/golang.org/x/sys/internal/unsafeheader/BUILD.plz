@@ -1,6 +1,6 @@
 subinclude("//build_defs")
 
-fileexport(
+fileexport2(
     name = "unsafeheader",
     srcs = ["internal/unsafeheader/unsafeheader.go"],
     tag = "go_source",

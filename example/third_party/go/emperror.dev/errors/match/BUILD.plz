@@ -1,6 +1,6 @@
 subinclude("//build_defs")
 
-fileexport(
+fileexport2(
     name = "match",
     srcs = ["match/match.go"],
     tag = "go_source",

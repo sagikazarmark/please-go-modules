@@ -190,7 +190,7 @@ func main() {
 					gofiles = append(gofiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
 				}
 
-				file += fmt.Sprintf(`fileexport(
+				file += fmt.Sprintf(`fileexport2(
     name = "%s",
     tag = "go_source",
     srcs = [%s],
@@ -210,7 +210,7 @@ func main() {
 						sfiles = append(sfiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
 					}
 
-					file += fmt.Sprintf(`fileexport(
+					file += fmt.Sprintf(`fileexport2(
     name = "%s",
     tag = "s_source",
     srcs = [%s],
@@ -232,7 +232,7 @@ func main() {
 						cgofiles = append(cgofiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
 					}
 
-					file += fmt.Sprintf(`fileexport(
+					file += fmt.Sprintf(`fileexport2(
     name = "%s",
     tag = "cgo_source",
     srcs = [%s],
@@ -248,7 +248,7 @@ func main() {
 						cfiles = append(cfiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
 					}
 
-					file += fmt.Sprintf(`fileexport(
+					file += fmt.Sprintf(`fileexport2(
     name = "%s",
     tag = "c_source",
     srcs = [%s],
@@ -264,7 +264,7 @@ func main() {
 						hfiles = append(hfiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
 					}
 
-					file += fmt.Sprintf(`fileexport(
+					file += fmt.Sprintf(`fileexport2(
     name = "%s",
     tag = "h_source",
     srcs = [%s],

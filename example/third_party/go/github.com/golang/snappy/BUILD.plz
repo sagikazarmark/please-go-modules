@@ -9,7 +9,7 @@ go_module_download(
     visibility = ["//example/third_party/go/github.com/golang/snappy/..."],
 )
 
-fileexport(
+fileexport2(
     name = "snappy",
     srcs = [
         "decode.go",
@@ -24,7 +24,7 @@ fileexport(
     deps = [":_snappy#download"],
 )
 
-fileexport(
+fileexport2(
     name = "snappy",
     srcs = [
         "decode_amd64.s",

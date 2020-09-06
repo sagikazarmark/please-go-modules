@@ -125,3 +125,58 @@ def fileexport(name:str, srcs:list, tag:str='', deps:list=None, exported_deps:li
         binary = binary,
         hashes = hashes,
     )
+
+def fileexport2(name:str, srcs:list, tag:str='', deps:list=None, exported_deps:list=None,
+              visibility:list=None, labels:list&features&tags=None, binary:bool=False, output_is_complete:bool=True,
+              requires:list=None, provides:dict=None, hashes:list=None, test_only:bool&testonly=False):
+    """Defines a collection of files which other rules can depend on.
+    Sources can come from dependencies.
+    The exported files will appear as if they were coming from the current package.
+
+    Args:
+      name (str): Name of the rule.
+      srcs (list): Source files for the rule.
+      tag (str): Tag applied to name; generates a private rule, for example name='a',tag='b' gives
+                 _a#b. Typically used for "private" rules.
+      deps (list): Dependencies of the rule.
+      exported_deps (list): Dependencies that will become visible to any rules that depend on this rule.
+      visibility (list): Visibility declaration of the rule.
+      labels (list): Labels to apply to this rule
+      binary (bool): True to mark the rule outputs as binary
+      output_is_complete (bool): If this is true then the rule blocks downwards searches of transitive
+                                 dependencies by other rules.
+      requires (list): Kinds of output from other rules that this one requires.
+      provides (dict): Kinds of output that this provides for other rules (see genrule() for a more
+                       in-depth discussion of this).
+      hashes (list): List of acceptable output hashes for this rule.
+      test_only (bool): If true the rule will only be visible to test targets.
+    """
+
+    files = ' '.join(srcs)
+
+    outs = []
+
+    for f in srcs:
+        outs += [f"{name}/{f}"]
+
+    return build_rule(
+        name = name,
+        tag = tag,
+        cmd = '\n'.join([
+            f'files="{files}"',
+            'for f in $files; do ',
+            f'    cp -r "$SRCS/$f" {name}/$f ',
+            'done ']),
+        srcs = deps,
+        outs = outs,
+        exported_deps = exported_deps,
+        visibility = visibility,
+        building_description = 'Copying...',
+        output_is_complete = output_is_complete,
+        requires = requires,
+        provides = provides,
+        test_only = test_only,
+        labels = labels,
+        binary = binary,
+        hashes = hashes,
+    )

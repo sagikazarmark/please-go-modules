@@ -9,7 +9,7 @@ go_module_download(
     visibility = ["//example/third_party/go/emperror.dev/errors/..."],
 )
 
-fileexport(
+fileexport2(
     name = "errors",
     srcs = [
         "error_details.go",

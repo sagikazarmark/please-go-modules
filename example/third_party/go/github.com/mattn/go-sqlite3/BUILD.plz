@@ -9,7 +9,7 @@ go_module_download(
     visibility = ["//example/third_party/go/github.com/mattn/go-sqlite3/..."],
 )
 
-fileexport(
+fileexport2(
     name = "go-sqlite3",
     srcs = [
         "convert.go",
@@ -46,7 +46,7 @@ fileexport(
     deps = [":_go-sqlite3#download"],
 )
 
-fileexport(
+fileexport2(
     name = "go-sqlite3",
     srcs = [
         "backup.go",
@@ -63,7 +63,7 @@ fileexport(
     deps = [":_go-sqlite3#download"],
 )
 
-fileexport(
+fileexport2(
     name = "go-sqlite3",
     srcs = [
         "sqlite3-binding.c",
@@ -73,7 +73,7 @@ fileexport(
     deps = [":_go-sqlite3#download"],
 )
 
-fileexport(
+fileexport2(
     name = "go-sqlite3",
     srcs = [
         "sqlite3-binding.h",
