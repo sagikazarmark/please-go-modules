@@ -30,4 +30,5 @@ go_test(
     srcs = ["pkg_external_test.go"],
     external = True,
     deps = [":external_test_issue_test_external"],
+    filter_srcs = False,
 )
