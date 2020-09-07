@@ -3,6 +3,5 @@
 Regenerate rules:
 
 ```bash
-plz build //cmd/gogetgen
-../plz-out/bin/cmd/gogetgen/gogetgen -dir third_party/go -base example -clean -genpkg -subinclude "//build_defs"
+plz run --in_wd //cmd/gogetgen -- -dir third_party/go -base example -clean -genpkg -subinclude "//build_defs"
 ```

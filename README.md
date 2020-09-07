@@ -14,11 +14,11 @@ http_archive(
 )
 ```
 
-Add the following snippet to your `.plzconfig`:
+Add the following snippet to your `.plzconfig` (or to a `.plzconfig.experimental` file and use `--profile experimental` in Please commands):
 
 ```
 [please]
-version = 15.2.1-beta.1
+version = 15.2.1-beta.2
 
 [buildconfig]
 moddown-tool = ///pleasegomod//:moddown
