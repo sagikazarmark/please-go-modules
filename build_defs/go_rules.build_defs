@@ -211,9 +211,9 @@ def _write_import_config_cmd(out, import_path):
         else:
             import_path = pkg
 
-    cmd = f'echo packagefile {import_path}/{name}=$PKG_DIR/{out} > $OUT'
-    if pkg.endswith(name):
-        cmd = f'{cmd} && echo packagefile {import_path}=$PKG_DIR/{out} >> $OUT'
+    #cmd = f'echo packagefile {import_path}/{name}=$PKG_DIR/{out} > $OUT'
+    #if pkg.endswith(name):
+    cmd = f'echo packagefile {import_path}=$PKG_DIR/{out} >> $OUT'
     return cmd
 
 def cgo_library(name:str, srcs:list, go_srcs:list=[], c_srcs:list=[], hdrs:list=[],
