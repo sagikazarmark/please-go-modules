@@ -20,9 +20,9 @@ jobs:
         with:
           go-version: 1.15
 
-      # As of Go 1.15 GOROOT is not detected properly
+      # Use the correct Go installation
       - name: Set Please overrides
-        run: echo "::set-env name=PLZ_OVERRIDES::go.goroot:$GOROOT;go.gotool:$GOROOT/bin/go"
+        run: echo "::set-env name=PLZ_OVERRIDES::go.gotool:$GOROOT/bin/go"
 
       - name: Checkout code
         uses: actions/checkout@v2
@@ -54,9 +54,9 @@ jobs:
         env:
           GOOS: darwin
 
-      # As of Go 1.15 GOROOT is not detected properly
+      # Use the correct Go installation
       - name: Set Please overrides
-        run: echo "::set-env name=PLZ_OVERRIDES::go.goroot:$GOROOT;go.gotool:$GOROOT/bin/go"
+        run: echo "::set-env name=PLZ_OVERRIDES::go.gotool:$GOROOT/bin/go"
 
       - name: Checkout code
         uses: actions/checkout@v2
