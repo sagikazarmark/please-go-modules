@@ -42,6 +42,15 @@ The last step is to use those dependencies.
 You can try using this patch though: https://github.com/tcncloud/wollemi/pull/5
 
 
+## Add custom Go rules
+
+Some releases might need to come with custom Go rules (eg. temporarily fixing problems, etc).
+
+1. Add `"go_rules.build_defs",` to `srcs` in `dist/build_file`
+1. Add `"go_rules.build_defs",` to `srcs` in `build_defs/BUILD`
+2. Add a `go_rules.build_defs` file to `build_defs/`
+
+
 ## Change log
 
 This experiment went through a couple versions, hit a few dead ends.

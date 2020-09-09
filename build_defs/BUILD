@@ -3,16 +3,14 @@ filegroup(
     srcs = [
         "binary.build_defs",
         "go_module.build_defs",
-        "go_rules.build_defs",
     ],
     visibility = ["PUBLIC"],
 )
 
 filegroup(
-    name = "go_module",
+    name = "dist",
     srcs = [
         "go_module.build_defs",
-        "go_rules.build_defs",
     ],
     visibility = ["PUBLIC"],
 )

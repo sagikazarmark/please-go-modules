@@ -15,7 +15,7 @@ tarball(
         "//cmd/gogetgen",
         "//dist:moddown",
         "//dist:build_file",
-        "//build_defs:go_module",
+        "//build_defs:dist",
     ],
     out = f"gogetgen_{CONFIG.OS}_{CONFIG.ARCH}.tar.gz",
     gzip = True,
