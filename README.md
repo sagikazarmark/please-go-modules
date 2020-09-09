@@ -10,7 +10,7 @@ Add the following snippet to your `BUILD` file in the root of your repository:
 ```starlark
 http_archive(
     name = "pleasegomod",
-    urls = [f"https://github.com/sagikazarmark/please-go-modules/releases/download/v0.0.6/gogetgen_{CONFIG.HOSTOS}_{CONFIG.HOSTARCH}.tar.gz"],
+    urls = [f"https://github.com/sagikazarmark/please-go-modules/releases/download/v0.0.7/gogetgen_{CONFIG.HOSTOS}_{CONFIG.HOSTARCH}.tar.gz"],
 )
 ```
 
@@ -18,10 +18,7 @@ Add the following snippet to your `.plzconfig` (or to a `.plzconfig.experimental
 
 ```
 [please]
-version = 15.2.1-beta.2
-
-[buildconfig]
-moddown-tool = ///pleasegomod//:moddown
+version = 15.3.1-beta.1
 
 [alias "godeps"]
 desc = Generate third-party dependency rules for a Go project
