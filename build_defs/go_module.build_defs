@@ -1,4 +1,7 @@
-CONFIG.setdefault("MODDOWN_TOOL", "//:moddown")
+subrepo = subrepo_name()
+subrepo = f"///{subrepo}" if subrepo else ""
+
+CONFIG.setdefault("MODDOWN_TOOL", subrepo + "//:moddown")
 
 def go_module_download(name:str, module:str, version:str, tag:str=None, sum:str=None, replace:str=None, deps:list=[],
                        patch:str=None, strip:list=None, licences:list=None, visibility:list=None, test_only:bool&testonly=False):
