@@ -5,7 +5,7 @@ moddown_binary("moddown", "0.1.0", visibility = ["PUBLIC"])
 github_repo(
     name = "pleasings2",
     repo = "sagikazarmark/mypleasings",
-    revision = "e4cc66bc0cd5b2bc86fc9bd058319a5c864c4261",
+    revision = "0b63e09260f2be22deae7d3896348114da77b6a0",
 )
 
 tarball(

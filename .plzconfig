@@ -1,5 +1,5 @@
 [please]
-version = 15.2.1-beta.2
+version = 15.3.1-beta.1
 
 [parse]
 preloadbuilddefs = build_defs/binary.build_defs
@@ -9,7 +9,6 @@ preloadbuilddefs = build_defs/binary.build_defs
 importpath = github.com/sagikazarmark/please-go-modules
 
 [buildconfig]
-hub-tool = "///pleasings2//tools/github:hub"
 hub-version = 2.14.2
 
 [alias "godeps"]
