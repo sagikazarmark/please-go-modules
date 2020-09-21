@@ -1,5 +1,5 @@
 [please]
-version = 15.3.1-beta.1
+version = 15.4.0
 
 [parse]
 preloadbuilddefs = build_defs/binary.build_defs
