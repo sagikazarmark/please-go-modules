@@ -68,6 +68,24 @@ jobs:
       - name: Build
         run: ./pleasew $PLZ_ARGS build :artifacts
 
+      - name: Upload linux artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: gogetgen_linux_amd64.tar.gz
+          path: plz-out/gen/gogetgen_linux_amd64.tar.gz
+
+      - name: Upload darwin artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: gogetgen_darwin_amd64.tar.gz
+          path: plz-out/gen/gogetgen_darwin_amd64.tar.gz
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v1
+        with:
+          name: checksums.txt
+          path: plz-out/gen/checksums.txt
+
       - name: Save Please log output
         uses: actions/upload-artifact@v1
         with:
