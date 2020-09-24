@@ -20,9 +20,8 @@ jobs:
         with:
           go-version: 1.15
 
-      # Use the correct Go installation
       - name: Set Please overrides
-        run: echo "::set-env name=PLZ_OVERRIDES::go.gotool:$GOROOT/bin/go"
+        run: echo "::set-env name=PLZ_OVERRIDES::build.path:$PATH"
 
       - name: Checkout code
         uses: actions/checkout@v2
@@ -54,9 +53,8 @@ jobs:
         env:
           GOOS: darwin
 
-      # Use the correct Go installation
       - name: Set Please overrides
-        run: echo "::set-env name=PLZ_OVERRIDES::go.gotool:$GOROOT/bin/go"
+        run: echo "::set-env name=PLZ_OVERRIDES::build.path:$PATH"
 
       - name: Checkout code
         uses: actions/checkout@v2
