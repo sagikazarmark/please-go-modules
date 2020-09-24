@@ -14,7 +14,3 @@ hub-version = 2.14.2
 [alias "godeps"]
 desc = Generate third-party dependency rules for a Go project
 cmd = run //cmd/gogetgen -- -dir third_party/go -clean -genpkg -subinclude "//build_defs"
-
-[alias "publish"]
-desc = Publish build artifacts to GitHub
-cmd = run :publish --
