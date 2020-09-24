@@ -1,0 +1,25 @@
+subinclude("//build_defs")
+
+fileexport(
+    name = "grpcutil",
+    srcs = [
+        "internal/grpcutil/encode_duration.go",
+        "internal/grpcutil/metadata.go",
+        "internal/grpcutil/method.go",
+        "internal/grpcutil/target.go",
+    ],
+    tag = "go_source",
+    deps = ["//example/third_party/go/google.golang.org/grpc:_grpc#download"],
+)
+
+go_library(
+    name = "grpcutil",
+    srcs = [":_grpcutil#go_source"],
+    cover = False,
+    import_path = "google.golang.org/grpc/internal/grpcutil",
+    visibility = ["PUBLIC"],
+    deps = [
+        "//example/third_party/go/google.golang.org/grpc/metadata",
+        "//example/third_party/go/google.golang.org/grpc/resolver",
+    ],
+)

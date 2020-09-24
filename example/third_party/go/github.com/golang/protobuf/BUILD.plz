@@ -1,0 +1,10 @@
+subinclude("//build_defs")
+
+go_module_download(
+    name = "protobuf",
+    module = "github.com/golang/protobuf",
+    sum = "h1:gyjaxf+svBWX08ZjK86iN9geUJF0H6gp2IRKX6Nf6/I=",
+    tag = "download",
+    version = "v1.3.3",
+    visibility = ["//example/third_party/go/github.com/golang/protobuf/..."],
+)

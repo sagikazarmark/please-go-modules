@@ -1,0 +1,47 @@
+subinclude("//build_defs")
+
+fileexport(
+    name = "transport",
+    srcs = [
+        "internal/transport/bdp_estimator.go",
+        "internal/transport/controlbuf.go",
+        "internal/transport/defaults.go",
+        "internal/transport/flowcontrol.go",
+        "internal/transport/handler_server.go",
+        "internal/transport/http2_client.go",
+        "internal/transport/http2_server.go",
+        "internal/transport/http_util.go",
+        "internal/transport/transport.go",
+    ],
+    tag = "go_source",
+    deps = ["//example/third_party/go/google.golang.org/grpc:_grpc#download"],
+)
+
+go_library(
+    name = "transport",
+    srcs = [":_transport#go_source"],
+    cover = False,
+    import_path = "google.golang.org/grpc/internal/transport",
+    visibility = ["PUBLIC"],
+    deps = [
+        "//example/third_party/go/github.com/golang/protobuf/proto",
+        "//example/third_party/go/golang.org/x/net/http2",
+        "//example/third_party/go/golang.org/x/net/http2/hpack",
+        "//example/third_party/go/google.golang.org/genproto/googleapis/rpc/status",
+        "//example/third_party/go/google.golang.org/grpc/codes",
+        "//example/third_party/go/google.golang.org/grpc/credentials",
+        "//example/third_party/go/google.golang.org/grpc/grpclog",
+        "//example/third_party/go/google.golang.org/grpc/internal",
+        "//example/third_party/go/google.golang.org/grpc/internal/channelz",
+        "//example/third_party/go/google.golang.org/grpc/internal/grpcrand",
+        "//example/third_party/go/google.golang.org/grpc/internal/grpcutil",
+        "//example/third_party/go/google.golang.org/grpc/internal/syscall",
+        "//example/third_party/go/google.golang.org/grpc/keepalive",
+        "//example/third_party/go/google.golang.org/grpc/metadata",
+        "//example/third_party/go/google.golang.org/grpc/peer",
+        "//example/third_party/go/google.golang.org/grpc/resolver",
+        "//example/third_party/go/google.golang.org/grpc/stats",
+        "//example/third_party/go/google.golang.org/grpc/status",
+        "//example/third_party/go/google.golang.org/grpc/tap",
+    ],
+)
