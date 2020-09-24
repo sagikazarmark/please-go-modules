@@ -9,7 +9,7 @@ github_repo(
 )
 
 tarball(
-    name = "package",
+    name = "artifact",
     srcs = [
         "README.md",
         "//cmd/gogetgen",
@@ -27,10 +27,20 @@ subinclude("///pleasings2//misc")
 sha256sum(
     name = "checksums.txt",
     srcs = [
-        "@linux_amd64//:package",
-        "@darwin_amd64//:package",
+        "@linux_amd64//:artifact",
+        "@darwin_amd64//:artifact",
     ],
     out = "checksums.txt",
+    labels = ["manual"],
+)
+
+filegroup(
+    name = "artifacts",
+    srcs = [
+        "@linux_amd64//:artifact",
+        "@darwin_amd64//:artifact",
+        ":checksums.txt",
+    ],
     labels = ["manual"],
 )
 
@@ -39,8 +49,8 @@ subinclude("///pleasings2//github")
 github_release(
     name = "publish",
     assets = [
-        "@linux_amd64//:package",
-        "@darwin_amd64//:package",
+        "@linux_amd64//:artifact",
+        "@darwin_amd64//:artifact",
         ":checksums.txt",
     ],
     labels = ["manual"],
