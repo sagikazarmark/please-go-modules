@@ -1,6 +1,6 @@
 subinclude("//build_defs")
 
-moddown_binary("moddown", "0.1.0", visibility = ["PUBLIC"])
+moddown_binary("moddown", "0.3.0", visibility = ["PUBLIC"])
 
 github_repo(
     name = "pleasings2",
