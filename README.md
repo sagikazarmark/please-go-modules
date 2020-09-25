@@ -1,7 +1,7 @@
 # Please Go Modules experiment
 
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/sagikazarmark/please-go-modules/CI?style=flat-square)](https://github.com/sagikazarmark/please-go-modules/actions?query=workflow%3ACI)
-![Please Version](https://img.shields.io/badge/please%20version-%3E=15.4.0-B879FF.svg?style=flat-square)
+![Please Version](https://img.shields.io/badge/please%20version-%3E=15.5.0-B879FF.svg?style=flat-square)
 
 Experiments with [Please](https://please.build) and Go modules.
 
