@@ -89,5 +89,5 @@ jobs:
       - name: Save Please log output
         uses: actions/upload-artifact@v1
         with:
-          name: package-log
+          name: artifacts-log
           path: plz-out/log
