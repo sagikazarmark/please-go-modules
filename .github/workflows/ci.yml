@@ -41,8 +41,8 @@ jobs:
           name: build-log
           path: plz-out/log
 
-  package:
-    name: Package
+  artifacts:
+    name: Artifacts
     runs-on: ubuntu-latest
     env:
       GOFLAGS: -mod=readonly
