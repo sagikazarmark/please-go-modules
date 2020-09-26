@@ -83,6 +83,7 @@ func main() {
 	}
 
 	files := make(map[string]string)
+	buildFiles := make(map[string]*buildify.File)
 	var filePaths []string
 
 	var ruleDir string
@@ -98,63 +99,94 @@ func main() {
 			filePath := module.Module.Path
 
 			// Get (and create) file
-			file, ok := files[filePath]
+			file, ok := buildFiles[filePath]
 			if !ok {
-				if *subinclude != "" {
-					file = fmt.Sprintf("subinclude(%q)\n\n", *subinclude)
-				}
-
+				file = newFile(filePath, subinclude)
 				filePaths = append(filePaths, filePath)
-			}
-
-			moduleVersion := module.Module.Version
-			if module.Module.Replace != nil && module.Module.Replace.Version != "" {
-				moduleVersion = module.Module.Replace.Version
-			}
-
-			var replace string
-
-			if module.Module.Replace != nil {
-				replace = fmt.Sprintf("\n    replace = \"%s\",\n", module.Module.Replace.Path)
+				buildFiles[filePath] = file
 			}
 
 			name := path.Base(module.Module.Path)
-			visibility := fmt.Sprintf("\n    visibility = [\"//%s/...\"],\n", path.Join(ruleDir, module.Module.Path))
+			visibility := fmt.Sprintf("//%s/...", path.Join(ruleDir, module.Module.Path))
 
 			if ruleDir == "" {
 				name = strings.Replace(module.Module.Path, "/", "_", -1)
 				visibility = ""
 			}
 
-			file += fmt.Sprintf(`go_module_download(
-    name = "%s",
-    tag = "download",
-    module = "%s",
-    version = "%s",
-    sum = "%s",%s%s
-)`+"\n",
-				name,
-				module.Module.Path,
-				moduleVersion,
-				module.Sum,
-				visibility,
-				replace,
-			)
+			version := module.Module.Version
+			if module.Module.Replace != nil && module.Module.Replace.Version != "" {
+				version = module.Module.Replace.Version
+			}
 
-			// Save file
-			files[filePath] = file
+			var replace string
+
+			if module.Module.Replace != nil {
+				replace = module.Module.Replace.Path
+			}
+
+			rule := &buildify.CallExpr{
+				X: &buildify.Ident{Name: "go_module_download"},
+				List: []buildify.Expr{
+					&buildify.AssignExpr{
+						LHS: &buildify.Ident{Name: "name"},
+						Op:  "=",
+						RHS: &buildify.StringExpr{Value: name},
+					},
+					&buildify.AssignExpr{
+						LHS: &buildify.Ident{Name: "tag"},
+						Op:  "=",
+						RHS: &buildify.StringExpr{Value: "download"},
+					},
+					&buildify.AssignExpr{
+						LHS: &buildify.Ident{Name: "module"},
+						Op:  "=",
+						RHS: &buildify.StringExpr{Value: module.Module.Path},
+					},
+					&buildify.AssignExpr{
+						LHS: &buildify.Ident{Name: "version"},
+						Op:  "=",
+						RHS: &buildify.StringExpr{Value: version},
+					},
+					&buildify.AssignExpr{
+						LHS: &buildify.Ident{Name: "sum"},
+						Op:  "=",
+						RHS: &buildify.StringExpr{Value: module.Sum},
+					},
+				},
+			}
+
+			if replace != "" {
+				rule.List = append(rule.List, &buildify.AssignExpr{
+					LHS: &buildify.Ident{Name: "replace"},
+					Op:  "=",
+					RHS: &buildify.StringExpr{Value: replace},
+				})
+			}
+
+			if visibility != "" {
+				rule.List = append(rule.List, &buildify.AssignExpr{
+					LHS: &buildify.Ident{Name: "visibility"},
+					Op:  "=",
+					RHS: &buildify.ListExpr{
+						List: []buildify.Expr{
+							&buildify.StringExpr{Value: visibility},
+						},
+					},
+				})
+			}
+
+			file.Stmt = append(file.Stmt, rule)
 
 			for _, pkg := range module.Packages {
 				filePath := pkg.ImportPath
 
-				// Get (or create) a file
-				file, ok := files[filePath]
+				// Get (and create) file
+				file, ok := buildFiles[filePath]
 				if !ok {
-					if *subinclude != "" {
-						file = fmt.Sprintf("subinclude(%q)\n\n", *subinclude)
-					}
-
+					file = newFile(filePath, subinclude)
 					filePaths = append(filePaths, filePath)
+					buildFiles[filePath] = file
 				}
 
 				name := path.Base(pkg.ImportPath)
@@ -177,49 +209,25 @@ func main() {
 				}
 
 				var gofiles []string
-				for _, gf := range pkg.GoFiles {
-					gofiles = append(gofiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
+				for _, f := range pkg.GoFiles {
+					gofiles = append(gofiles, f)
 				}
 
 				// Include ignored files (required for cross-compilation)
-				for _, gf := range pkg.IgnoredGoFiles {
-					if strings.HasSuffix(gf, "_test.go") {
+				for _, f := range pkg.IgnoredGoFiles {
+					if strings.HasSuffix(f, "_test.go") {
 						continue // Skip test files
 					}
 
-					gofiles = append(gofiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
+					gofiles = append(gofiles, f)
 				}
 
-				file += fmt.Sprintf(`fileexport(
-    name = "%s",
-    tag = "go_source",
-    srcs = [%s],
-    deps = ["%s"],
-)`+"\n",
-					name,
-					strings.Join(gofiles, ", "),
-					moduleSource,
-				)
+				file.Stmt = append(file.Stmt, sourceFileRule(gofiles, name, "go_source", moduleSource, packageSource))
 
 				isAsm := len(pkg.SFiles) > 0
 
 				if isAsm {
-
-					var sfiles []string
-					for _, gf := range pkg.SFiles {
-						sfiles = append(sfiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
-					}
-
-					file += fmt.Sprintf(`fileexport(
-    name = "%s",
-    tag = "s_source",
-    srcs = [%s],
-    deps = ["%s"],
-)`+"\n",
-						name,
-						strings.Join(sfiles, ", "),
-						moduleSource,
-					)
+					file.Stmt = append(file.Stmt, sourceFileRule(pkg.SFiles, name, "s_source", moduleSource, packageSource))
 				}
 
 				isCgo := len(pkg.CgoFiles) > 0
@@ -227,53 +235,9 @@ func main() {
 				if isCgo {
 					generateOsConfig = true
 
-					var cgofiles []string
-					for _, gf := range pkg.CgoFiles {
-						cgofiles = append(cgofiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
-					}
-
-					file += fmt.Sprintf(`fileexport(
-    name = "%s",
-    tag = "cgo_source",
-    srcs = [%s],
-    deps = ["%s"],
-)`+"\n",
-						name,
-						strings.Join(cgofiles, ", "),
-						moduleSource,
-					)
-
-					var cfiles []string
-					for _, gf := range pkg.CFiles {
-						cfiles = append(cfiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
-					}
-
-					file += fmt.Sprintf(`fileexport(
-    name = "%s",
-    tag = "c_source",
-    srcs = [%s],
-    deps = ["%s"],
-)`+"\n",
-						name,
-						strings.Join(cfiles, ", "),
-						moduleSource,
-					)
-
-					var hfiles []string
-					for _, gf := range pkg.HFiles {
-						hfiles = append(hfiles, fmt.Sprintf("%q", path.Join(packageSource, gf)))
-					}
-
-					file += fmt.Sprintf(`fileexport(
-    name = "%s",
-    tag = "h_source",
-    srcs = [%s],
-    deps = ["%s"],
-)`+"\n",
-						name,
-						strings.Join(hfiles, ", "),
-						moduleSource,
-					)
+					file.Stmt = append(file.Stmt, sourceFileRule(pkg.CgoFiles, name, "cgo_source", moduleSource, packageSource))
+					file.Stmt = append(file.Stmt, sourceFileRule(pkg.CFiles, name, "c_source", moduleSource, packageSource))
+					file.Stmt = append(file.Stmt, sourceFileRule(pkg.HFiles, name, "h_source", moduleSource, packageSource))
 				}
 
 				var deps []string
@@ -287,82 +251,21 @@ func main() {
 					}
 
 					if ruleDir == "" {
-						deps = append(deps, fmt.Sprintf("%q", ":"+strings.Replace(depPath, "/", "_", -1)))
+						deps = append(deps, ":"+strings.Replace(depPath, "/", "_", -1))
 
 						continue
 					}
 
-					deps = append(deps, fmt.Sprintf("%q", fmt.Sprintf("//%s", path.Join(ruleDir, depPath))))
+					deps = append(deps, fmt.Sprintf("//%s", path.Join(ruleDir, depPath)))
 				}
 
 				if isCgo {
 					cgocflags := map[string][]string{
-						currentOS: []string{},
-					}
-
-					for _, cf := range pkg.CgoCFLAGS {
-						// Some libraries add . to the list of include paths
-						// Replace it with PKG, ommit the rest
-						// TODO: log ommited flags
-						if strings.HasPrefix(cf, "-I") {
-							// Module or import path reference
-							if strings.Contains(cf, fmt.Sprintf("pkg/mod/%s", module.Module.Path)) ||
-								strings.Contains(cf, pkg.ImportPath) {
-								cgocflags[currentOS] = append(cgocflags[currentOS], `"-I ${PKG}"`)
-							}
-
-							continue
-						}
-
-						cgocflags[currentOS] = append(cgocflags[currentOS], fmt.Sprintf("%q", cf))
-					}
-
-					for _, os := range alternateOSes {
-						ctxt := build.Default
-						ctxt.GOOS = os
-						ctxt.CgoEnabled = true
-
-						osPkg, err := ctxt.ImportDir(pkg.Dir, build.ImportComment)
-						if err != nil {
-							panic(err)
-						}
-
-						cgocflags[os] = make([]string, 0, len(osPkg.CgoCFLAGS))
-						for _, f := range osPkg.CgoCFLAGS {
-							// Some libraries add . to the list of include paths
-							// Replace it with PKG, ommit the rest
-							// TODO: log ommited flags
-							if strings.HasPrefix(f, "-I") {
-								// Module or import path reference
-								if strings.Contains(f, fmt.Sprintf("pkg/mod/%s", module.Module.Path)) ||
-									strings.Contains(f, pkg.ImportPath) {
-									cgocflags[os] = append(cgocflags[os], `"-I ${PKG}"`)
-								}
-
-								continue
-							}
-
-							cgocflags[os] = append(cgocflags[os], fmt.Sprintf("%q", f))
-						}
-					}
-
-					var cgocflagsselect string
-					for os, fs := range cgocflags {
-						cgocflagsselect += fmt.Sprintf("\n"+`        "//%s:%s": [`+"\n", path.Join(ruleDir, "__config"), os)
-
-						for _, f := range fs {
-							cgocflagsselect += fmt.Sprintf(`            %s, `+"\n", f)
-						}
-
-						cgocflagsselect += "        ],\n    "
+						fmt.Sprintf("//%s:%s", path.Join(ruleDir, "__config"), currentOS): filterCgoCFlags(pkg.CgoCFLAGS, pkg, module),
 					}
 
 					cgoldflags := map[string][]string{
-						currentOS: []string{},
-					}
-
-					for _, cf := range pkg.CgoLDFLAGS {
-						cgoldflags[currentOS] = append(cgoldflags[currentOS], fmt.Sprintf("%q", cf))
+						fmt.Sprintf("//%s:%s", path.Join(ruleDir, "__config"), currentOS): pkg.CgoLDFLAGS,
 					}
 
 					for _, os := range alternateOSes {
@@ -375,63 +278,146 @@ func main() {
 							panic(err)
 						}
 
-						cgoldflags[os] = make([]string, 0, len(osPkg.CgoLDFLAGS))
-						for _, f := range osPkg.CgoLDFLAGS {
-							cgoldflags[os] = append(cgoldflags[os], fmt.Sprintf("%q", f))
-						}
+						cgocflags[fmt.Sprintf("//%s:%s", path.Join(ruleDir, "__config"), os)] = filterCgoCFlags(osPkg.CgoCFLAGS, pkg, module)
+						cgoldflags[fmt.Sprintf("//%s:%s", path.Join(ruleDir, "__config"), os)] = osPkg.CgoLDFLAGS
 					}
 
-					var cgoldflagsselect string
-					for os, fs := range cgoldflags {
-						cgoldflagsselect += fmt.Sprintf("\n"+`        "//%s:%s": [`+"\n", path.Join(ruleDir, "__config"), os)
-
-						for _, f := range fs {
-							cgoldflagsselect += fmt.Sprintf(`            %s, `+"\n", f)
-						}
-
-						cgoldflagsselect += "        ],\n    "
+					rule := &buildify.CallExpr{
+						X: &buildify.Ident{Name: "cgo_library"},
+						List: []buildify.Expr{
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "name"},
+								Op:  "=",
+								RHS: &buildify.StringExpr{Value: name},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "srcs"},
+								Op:  "=",
+								RHS: &buildify.ListExpr{
+									List: []buildify.Expr{
+										&buildify.StringExpr{Value: fmt.Sprintf(":_%s#cgo_source", name)},
+									},
+								},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "go_srcs"},
+								Op:  "=",
+								RHS: &buildify.ListExpr{
+									List: []buildify.Expr{
+										&buildify.StringExpr{Value: fmt.Sprintf(":_%s#go_source", name)},
+									},
+								},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "c_srcs"},
+								Op:  "=",
+								RHS: &buildify.ListExpr{
+									List: []buildify.Expr{
+										&buildify.StringExpr{Value: fmt.Sprintf(":_%s#c_source", name)},
+									},
+								},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "hdrs"},
+								Op:  "=",
+								RHS: &buildify.ListExpr{
+									List: []buildify.Expr{
+										&buildify.StringExpr{Value: fmt.Sprintf(":_%s#h_source", name)},
+									},
+								},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "visibility"},
+								Op:  "=",
+								RHS: &buildify.ListExpr{
+									List: []buildify.Expr{
+										&buildify.StringExpr{Value: "PUBLIC"},
+									},
+								},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "import_path"},
+								Op:  "=",
+								RHS: &buildify.StringExpr{Value: pkg.ImportPath},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "deps"},
+								Op:  "=",
+								RHS: stringListExpr(deps),
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "compiler_flags"},
+								Op:  "=",
+								RHS: stringMapListSelect(cgocflags),
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "linker_flags"},
+								Op:  "=",
+								RHS: stringMapListSelect(cgoldflags),
+							},
+						},
 					}
 
-					file += fmt.Sprintf(`cgo_library(
-    name = "%s",
-    srcs = [":_%[1]s#cgo_source"],
-    go_srcs = [":_%[1]s#go_source"],
-    c_srcs = [":_%[1]s#c_source"],
-    hdrs = [":_%[1]s#h_source"],
-    compiler_flags = select({%s}),
-    linker_flags = select({%s}),
-    visibility = ["PUBLIC"],
-    deps = [%s],
-    import_path = "%s",
-)`+"\n",
-						name,
-						cgocflagsselect,
-						cgoldflagsselect,
-						strings.Join(deps, ", "),
-						pkg.ImportPath,
-					)
+					file.Stmt = append(file.Stmt, rule)
 				} else {
-					var asm string
-					if isAsm {
-						asm = fmt.Sprintf("\n    asm_srcs = [\":_%s#s_source\"],\n", name)
+					rule := &buildify.CallExpr{
+						X: &buildify.Ident{Name: "go_library"},
+						List: []buildify.Expr{
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "name"},
+								Op:  "=",
+								RHS: &buildify.StringExpr{Value: name},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "srcs"},
+								Op:  "=",
+								RHS: &buildify.ListExpr{
+									List: []buildify.Expr{
+										&buildify.StringExpr{Value: fmt.Sprintf(":_%s#go_source", name)},
+									},
+								},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "visibility"},
+								Op:  "=",
+								RHS: &buildify.ListExpr{
+									List: []buildify.Expr{
+										&buildify.StringExpr{Value: "PUBLIC"},
+									},
+								},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "cover"},
+								Op:  "=",
+								RHS: &buildify.Ident{Name: "False"},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "import_path"},
+								Op:  "=",
+								RHS: &buildify.StringExpr{Value: pkg.ImportPath},
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "deps"},
+								Op:  "=",
+								RHS: stringListExpr(deps),
+							},
+						},
 					}
 
-					file += fmt.Sprintf(`go_library(
-    name = "%s",
-    srcs = [":_%[1]s#go_source"],%s
-	visibility = ["PUBLIC"],
-	cover = False,
-    deps = [%s],
-    import_path = "%s",
-)`+"\n",
-						name,
-						asm,
-						strings.Join(deps, ", "),
-						pkg.ImportPath,
-					)
-				}
+					if isAsm {
+						rule.List = append(rule.List, &buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "asm_srcs"},
+							Op:  "=",
+							RHS: &buildify.ListExpr{
+								List: []buildify.Expr{
+									&buildify.StringExpr{Value: fmt.Sprintf(":_%s#s_source", name)},
+								},
+							},
+						})
+					}
 
-				files[filePath] = file
+					file.Stmt = append(file.Stmt, rule)
+				}
 			}
 		} else if module.ResolvePackages { // END OF CURRENTLY WORKING LOGIC
 			filePath := path.Dir(module.Module.Path)
@@ -640,100 +626,347 @@ func main() {
 		}
 	}
 
-	if generateOsConfig {
-		filePath := "__config"
+	if len(buildFiles) > 0 {
+		if generateOsConfig {
+			filePath := "__config"
 
-		// Get (or create) a file
-		file, ok := files[filePath]
-		if !ok {
-			file = `package(default_visibility = ["PUBLIC"])` + "\n\n"
+			// Get (and create) file
+			file, ok := buildFiles[filePath]
+			if !ok {
+				file = &buildify.File{
+					Path: filePath,
+					Type: buildify.TypeBuild,
+				}
 
-			filePaths = append(filePaths, filePath)
-		}
+				file.Stmt = append(file.Stmt, &buildify.CallExpr{
+					X: &buildify.Ident{Name: "package"},
+					List: []buildify.Expr{
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "default_visibility"},
+							Op:  "=",
+							RHS: &buildify.ListExpr{
+								List: []buildify.Expr{
+									&buildify.StringExpr{Value: "PUBLIC"},
+								},
+							},
+						},
+					},
+				})
 
-		for _, os := range supportedOSes {
-			file += fmt.Sprintf(`config_setting(name = "%[1]s", values = {"os": "%[1]s"})`+"\n", os)
-		}
-		files[filePath] = file
-	}
-
-	sort.Strings(filePaths)
-
-	for filePath, fileContent := range files {
-		buildFileContent := []byte(fileContent)
-		if !*disableOptimization {
-			buildFile, err := buildify.ParseBuild("BUILD.plz", buildFileContent)
-			if err != nil {
-				panic(err)
+				filePaths = append(filePaths, filePath)
+				buildFiles[filePath] = file
 			}
 
-			buildFileContent = buildify.Format(buildFile)
+			for _, os := range supportedOSes {
+				rule := &buildify.CallExpr{
+					X: &buildify.Ident{Name: "config_setting"},
+					List: []buildify.Expr{
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "name"},
+							Op:  "=",
+							RHS: &buildify.StringExpr{Value: os},
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "values"},
+							Op:  "=",
+							RHS: &buildify.DictExpr{
+								List: []*buildify.KeyValueExpr{
+									{
+										Key:   &buildify.StringExpr{Value: "os"},
+										Value: &buildify.StringExpr{Value: os},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				file.Stmt = append(file.Stmt, rule)
+			}
 		}
 
-		files[filePath] = string(buildFileContent)
-	}
+		sort.Strings(filePaths)
 
-	if *stdout {
-		for _, filePath := range filePaths {
-			fmt.Printf("# %s\n\n%s\n\n", filePath, files[filePath])
+		files := make(map[string][]byte, len(buildFiles))
+
+		for filePath, buildFile := range buildFiles {
+			files[filePath] = buildify.Format(buildFile)
 		}
-	} else if *dir != "" {
-		if *dryRun {
+
+		if *stdout {
 			for _, filePath := range filePaths {
-				file := files[filePath]
-
-				fmt.Printf("%s:\n\n%s", path.Join(*dir, filePath, "BUILD.plz"), file)
+				fmt.Printf("# %s\n\n%s\n\n", filePath, files[filePath])
 			}
-		} else {
-			if filepath.IsAbs(*dir) {
-				log.Fatal("Absolute path not allowed")
-			}
+		} else if *dir != "" {
+			if *dryRun {
+				for _, filePath := range filePaths {
+					file := files[filePath]
 
-			// TODO: disable every path outside of the module root
-
-			if *clean {
-				err := os.RemoveAll(*dir)
-				if err != nil {
-					panic(err)
+					fmt.Printf("%s:\n\n%s", path.Join(*dir, filePath, "BUILD.plz"), file)
 				}
-			}
-
-			err := os.MkdirAll(*dir, 0755)
-			if err != nil {
-				panic(err)
-			}
-
-			for _, filePath := range filePaths {
-				dirPath := path.Join(*dir, filePath)
-
-				err := os.MkdirAll(dirPath, 0755)
-				if err != nil {
-					panic(err)
+			} else {
+				if filepath.IsAbs(*dir) {
+					log.Fatal("Absolute path not allowed")
 				}
 
-				file, err := os.OpenFile(path.Join(dirPath, "BUILD.plz"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+				// TODO: disable every path outside of the module root
+
+				if *clean {
+					err := os.RemoveAll(*dir)
+					if err != nil {
+						panic(err)
+					}
+				}
+
+				err := os.MkdirAll(*dir, 0755)
 				if err != nil {
 					panic(err)
 				}
 
-				buildFileContent := []byte(files[filePath])
+				for _, filePath := range filePaths {
+					dirPath := path.Join(*dir, filePath)
 
-				if !*disableOptimization {
-					buildFile, err := buildify.ParseBuild("BUILD.plz", []byte(files[filePath]))
+					err := os.MkdirAll(dirPath, 0755)
 					if err != nil {
 						panic(err)
 					}
 
-					buildFileContent = buildify.Format(buildFile)
-				}
+					file, err := os.OpenFile(path.Join(dirPath, "BUILD.plz"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+					if err != nil {
+						panic(err)
+					}
 
-				_, err = file.Write(buildFileContent)
+					buildFileContent := []byte(files[filePath])
+
+					if !*disableOptimization {
+						buildFile, err := buildify.ParseBuild("BUILD.plz", []byte(files[filePath]))
+						if err != nil {
+							panic(err)
+						}
+
+						buildFileContent = buildify.Format(buildFile)
+					}
+
+					_, err = file.Write(buildFileContent)
+					if err != nil {
+						panic(err)
+					}
+				}
+			}
+		} else {
+			log.Fatal("Either -stdout or -dir must be passed")
+		}
+	} else {
+		if generateOsConfig {
+			filePath := "__config"
+
+			// Get (or create) a file
+			file, ok := files[filePath]
+			if !ok {
+				file = `package(default_visibility = ["PUBLIC"])` + "\n\n"
+
+				filePaths = append(filePaths, filePath)
+			}
+
+			for _, os := range supportedOSes {
+				file += fmt.Sprintf(`config_setting(name = "%[1]s", values = {"os": "%[1]s"})`+"\n", os)
+			}
+			files[filePath] = file
+		}
+
+		sort.Strings(filePaths)
+
+		for filePath, fileContent := range files {
+			buildFileContent := []byte(fileContent)
+			if !*disableOptimization {
+				buildFile, err := buildify.ParseBuild("BUILD.plz", buildFileContent)
 				if err != nil {
 					panic(err)
 				}
+
+				buildFileContent = buildify.Format(buildFile)
 			}
+
+			files[filePath] = string(buildFileContent)
 		}
-	} else {
-		log.Fatal("Either -stdout or -dir must be passed")
+
+		if *stdout {
+			for _, filePath := range filePaths {
+				fmt.Printf("# %s\n\n%s\n\n", filePath, files[filePath])
+			}
+		} else if *dir != "" {
+			if *dryRun {
+				for _, filePath := range filePaths {
+					file := files[filePath]
+
+					fmt.Printf("%s:\n\n%s", path.Join(*dir, filePath, "BUILD.plz"), file)
+				}
+			} else {
+				if filepath.IsAbs(*dir) {
+					log.Fatal("Absolute path not allowed")
+				}
+
+				// TODO: disable every path outside of the module root
+
+				if *clean {
+					err := os.RemoveAll(*dir)
+					if err != nil {
+						panic(err)
+					}
+				}
+
+				err := os.MkdirAll(*dir, 0755)
+				if err != nil {
+					panic(err)
+				}
+
+				for _, filePath := range filePaths {
+					dirPath := path.Join(*dir, filePath)
+
+					err := os.MkdirAll(dirPath, 0755)
+					if err != nil {
+						panic(err)
+					}
+
+					file, err := os.OpenFile(path.Join(dirPath, "BUILD.plz"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+					if err != nil {
+						panic(err)
+					}
+
+					buildFileContent := []byte(files[filePath])
+
+					if !*disableOptimization {
+						buildFile, err := buildify.ParseBuild("BUILD.plz", []byte(files[filePath]))
+						if err != nil {
+							panic(err)
+						}
+
+						buildFileContent = buildify.Format(buildFile)
+					}
+
+					_, err = file.Write(buildFileContent)
+					if err != nil {
+						panic(err)
+					}
+				}
+			}
+		} else {
+			log.Fatal("Either -stdout or -dir must be passed")
+		}
+	}
+}
+
+func newFile(filePath string, subinclude *string) *buildify.File {
+	file := &buildify.File{
+		Path: filePath,
+		Type: buildify.TypeBuild,
+	}
+
+	if *subinclude != "" {
+		file.Stmt = append(file.Stmt, &buildify.CallExpr{
+			X: &buildify.Ident{Name: "subinclude"},
+			List: []buildify.Expr{
+				&buildify.StringExpr{Value: *subinclude},
+			},
+		})
+	}
+
+	return file
+}
+
+func stringListExpr(s []string) *buildify.ListExpr {
+	list := &buildify.ListExpr{}
+
+	for _, e := range s {
+		list.List = append(list.List, &buildify.StringExpr{Value: e})
+	}
+
+	return list
+}
+
+func sourceFileRule(files []string, name string, tag string, moduleSource string, packageSource string) *buildify.CallExpr {
+	rule := &buildify.CallExpr{
+		X: &buildify.Ident{Name: "fileexport"},
+		List: []buildify.Expr{
+			&buildify.AssignExpr{
+				LHS: &buildify.Ident{Name: "name"},
+				Op:  "=",
+				RHS: &buildify.StringExpr{Value: name},
+			},
+			&buildify.AssignExpr{
+				LHS: &buildify.Ident{Name: "tag"},
+				Op:  "=",
+				RHS: &buildify.StringExpr{Value: tag},
+			},
+			&buildify.AssignExpr{
+				LHS: &buildify.Ident{Name: "deps"},
+				Op:  "=",
+				RHS: &buildify.ListExpr{
+					List: []buildify.Expr{
+						&buildify.StringExpr{Value: moduleSource},
+					},
+				},
+			},
+		},
+	}
+
+	srcsList := &buildify.ListExpr{}
+
+	for _, file := range files {
+		srcsList.List = append(srcsList.List, &buildify.StringExpr{Value: path.Join(packageSource, file)})
+	}
+
+	rule.List = append(rule.List, &buildify.AssignExpr{
+		LHS: &buildify.Ident{Name: "srcs"},
+		Op:  "=",
+		RHS: srcsList,
+	})
+
+	return rule
+}
+
+func filterCgoCFlags(flags []string, pkg golist.Package, mod modgraph.Module) []string {
+	result := []string{}
+
+	for _, f := range flags {
+		// Some libraries add . to the list of include paths
+		// Replace it with PKG, ommit the rest
+		// TODO: log ommited flags
+		if strings.HasPrefix(f, "-I") {
+			// Module or import path reference
+			if strings.Contains(f, fmt.Sprintf("pkg/mod/%s", mod.Module.Path)) || strings.Contains(f, pkg.ImportPath) {
+				result = append(result, "-I ${PKG}")
+			}
+
+			continue
+		}
+
+		result = append(result, f)
+	}
+
+	return result
+}
+
+func stringMapListSelect(s map[string][]string) buildify.Expr {
+	keys := make([]string, 0, len(s))
+
+	for key := range s {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+
+	dict := &buildify.DictExpr{}
+
+	for _, key := range keys {
+		dict.List = append(dict.List, &buildify.KeyValueExpr{
+			Key:   &buildify.StringExpr{Value: key},
+			Value: stringListExpr(s[key]),
+		})
+	}
+
+	return &buildify.CallExpr{
+		X:    &buildify.Ident{Name: "select"},
+		List: []buildify.Expr{dict},
 	}
 }
