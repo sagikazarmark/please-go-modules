@@ -7,8 +7,8 @@ on:
   pull_request:
 
 jobs:
-  build:
-    name: Build
+  test:
+    name: Test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -27,14 +27,6 @@ jobs:
 
       - name: Set up Please
         uses: sagikazarmark/setup-please-action@v0
-        with:
-          save-logs: 'true'
-        env:
-          # See https://github.com/sagikazarmark/setup-please-action/issues/6
-          MATRIX_CONTEXT: ${{ toJson(matrix) }}
-
-      - name: Build
-        run: plz build ./...
 
       - name: Test
         run: plz test ./...
@@ -61,8 +53,6 @@ jobs:
 
       - name: Set up Please
         uses: sagikazarmark/setup-please-action@v0
-        with:
-          save-logs: 'true'
 
       - name: Build
         run: plz build :artifacts
