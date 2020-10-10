@@ -60,14 +60,14 @@ jobs:
       - name: Upload linux artifact
         uses: actions/upload-artifact@v1
         with:
-          name: gogetgen_linux_amd64.tar.gz
-          path: plz-out/gen/gogetgen_linux_amd64.tar.gz
+          name: godeps_linux_amd64.tar.gz
+          path: plz-out/gen/godeps_linux_amd64.tar.gz
 
       - name: Upload darwin artifact
         uses: actions/upload-artifact@v1
         with:
-          name: gogetgen_darwin_amd64.tar.gz
-          path: plz-out/gen/gogetgen_darwin_amd64.tar.gz
+          name: godeps_darwin_amd64.tar.gz
+          path: plz-out/gen/godeps_darwin_amd64.tar.gz
 
       - name: Upload checksums
         uses: actions/upload-artifact@v1
