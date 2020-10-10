@@ -13,4 +13,4 @@ gh-version = 1.0.0
 
 [alias "godeps"]
 desc = Generate third-party dependency rules for a Go project
-cmd = run //cmd/gogetgen -- -dir third_party/go -clean -genpkg -subinclude "//build_defs"
+cmd = run //cmd/godeps -- -dir third_party/go -clean -genpkg -subinclude "//build_defs"

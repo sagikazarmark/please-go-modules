@@ -12,12 +12,12 @@ tarball(
     name = "artifact",
     srcs = [
         "README.md",
-        "//cmd/gogetgen",
+        "//cmd/godeps",
         "//dist:moddown",
         "//dist:build_file",
         "//build_defs:dist",
     ],
-    out = f"gogetgen_{CONFIG.OS}_{CONFIG.ARCH}.tar.gz",
+    out = f"godeps_{CONFIG.OS}_{CONFIG.ARCH}.tar.gz",
     gzip = True,
     labels = ["manual"],
 )
