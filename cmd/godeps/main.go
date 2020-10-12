@@ -75,12 +75,6 @@ func main() {
 		depMap[dep.ImportPath] = dep
 	}
 
-	modMap := make(map[string]modgraph.Module)
-
-	for _, module := range moduleList {
-		modMap[module.Module.Path] = module
-	}
-
 	buildFiles := make(map[string]*buildify.File)
 	var filePaths []string
 
