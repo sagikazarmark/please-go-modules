@@ -131,23 +131,6 @@ func CalculateDepGraph(module string, deps []golist.Package, sumFile sumfile.Fil
 
 					depList[pkgToModule[imp]] = true
 				}
-
-				/*for _, imp := range pkg.TestImports {
-					if packages[imp].Standard {
-						continue
-					}
-
-					if imp == "C" {
-						continue
-					}
-
-					// Ignore self-references
-					if packages[imp].Module != nil && packages[imp].Module.Path == modulePath {
-						continue
-					}
-
-					depList[pkgToModule[imp]] = true
-				}*/
 			}
 		}
 
