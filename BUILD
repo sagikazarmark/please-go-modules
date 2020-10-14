@@ -1,11 +1,11 @@
 subinclude("//build_defs")
 
-moddown_binary("moddown", "0.3.0", visibility = ["PUBLIC"])
+moddown_binary("moddown", CONFIG.MODDOWN_VERSION, visibility = ["PUBLIC"])
 
 github_repo(
     name = "pleasings2",
     repo = "sagikazarmark/mypleasings",
-    revision = "f8a12721c6f929db3e227e07c152d428ac47ab1b",
+    revision = "6cc6a2fcae878819c5ebf8e3c7438886b55bdb21",
 )
 
 tarball(

@@ -1,5 +1,5 @@
 [please]
-version = 15.5.0
+version = 15.6.0
 
 [parse]
 preloadbuilddefs = build_defs/binary.build_defs
@@ -10,6 +10,7 @@ importpath = github.com/sagikazarmark/please-go-modules
 
 [buildconfig]
 gh-version = 1.0.0
+moddown-version = 0.3.1
 
 [alias "godeps"]
 desc = Generate third-party dependency rules for a Go project
