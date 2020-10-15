@@ -1,6 +1,6 @@
 go_binary(
     name = "godeps",
-    srcs = ["main.go"],
+    srcs = ["main.go", "platform.go"],
     visibility = ["PUBLIC"],
     deps = [
         "//pkg/golist",

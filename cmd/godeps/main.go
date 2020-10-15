@@ -57,9 +57,24 @@ func main() {
 		panic(err)
 	}
 
-	deps, err := golist.Deps(rootModule)
-	if err != nil {
-		panic(err)
+	deps := make(map[Platform][]golist.Package, len(SupportedPlatforms))
+
+	// hack for now to preserve backwards compatibility
+	for _, platform := range SupportedPlatforms[1:] {
+		options := golist.ListOptions{
+			Packages: []string{fmt.Sprintf("%s/...", rootModule)},
+			Deps:     true,
+			Test:     false,
+			OS:       platform.OS,
+			Arch:     platform.Arch,
+		}
+
+		platformDeps, err := golist.List(options)
+		if err != nil {
+			panic(err)
+		}
+
+		deps[platform] = platformDeps
 	}
 
 	sumFile, err := sumfile.Load()
@@ -67,11 +82,11 @@ func main() {
 		panic(err)
 	}
 
-	moduleList := modgraph.CalculateDepGraph(rootModule, deps, *sumFile)
+	moduleList := modgraph.CalculateDepGraph(rootModule, deps[SupportedPlatforms[1]], *sumFile)
 
 	depMap := make(map[string]golist.Package)
 
-	for _, dep := range deps {
+	for _, dep := range deps[SupportedPlatforms[1]] {
 		depMap[dep.ImportPath] = dep
 	}
 
