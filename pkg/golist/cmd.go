@@ -3,7 +3,9 @@ package golist
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 )
 
@@ -59,6 +61,28 @@ type ListOptions struct {
 	Packages []string
 	Deps     bool
 	Test     bool
+	OS       string
+	Arch     string
+}
+
+// GetOS returns the OS defined in the options,
+// falling back to runtime.GOOS.
+func (o ListOptions) GetOS() string {
+	if o.OS == "" {
+		return runtime.GOOS
+	}
+
+	return o.OS
+}
+
+// GetArch returns the arch defined in the options,
+// falling back to runtime.GOARCH.
+func (o ListOptions) GetArch() string {
+	if o.Arch == "" {
+		return runtime.GOARCH
+	}
+
+	return o.Arch
 }
 
 // List lists named packages.
@@ -76,6 +100,10 @@ func List(options ListOptions) ([]Package, error) {
 	args = append(args, options.Packages...)
 
 	cmd := exec.Command("go", args...)
+	cmd.Env = os.Environ()
+
+	cmd.Env = append(cmd.Env, "GOOS="+options.GetOS(), "GOARCH="+options.GetArch())
+
 	p, err := cmd.Output()
 	if err != nil {
 		return nil, err
