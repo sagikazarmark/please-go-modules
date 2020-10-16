@@ -5,8 +5,6 @@
 package sumfile
 
 import (
-	"errors"
-	"fmt"
 	"io/ioutil"
 	"os/exec"
 	"sort"
@@ -16,6 +14,8 @@ import (
 // File is the parsed, interpreted form of a go.sum file.
 type File struct {
 	Modules []Module
+
+	Errors []Error
 }
 
 // Module is a single module in a go.sum file.
@@ -33,18 +33,31 @@ type Version struct {
 	GoModSum string
 }
 
+// Error represents an error ocurred when parsing a specific entry in the sum file.
+type Error struct {
+	Pos int    // position of error (if present, line)
+	Err string // the error itself
+}
+
 // Parse parses the data into a File struct.
-func Parse(data []byte) (*File, error) {
+func Parse(data []byte) File {
 	lines := strings.Split(string(data), "\n")
 	if lines[len(lines)-1] != "" {
-		return nil, errors.New("final line missing newline")
+		return File{
+			Errors: []Error{
+				{
+					Pos: len(lines),
+					Err: "final line missing newline",
+				},
+			},
+		}
 	}
 
 	lines = lines[:len(lines)-1]
 
 	sort.Strings(lines)
 
-	errs := make([]string, len(lines))
+	var errs []Error
 
 	var file File
 
@@ -54,7 +67,10 @@ func Parse(data []byte) (*File, error) {
 	for i, line := range lines {
 		fields := strings.Fields(line)
 		if len(fields) != 3 {
-			errs[i] = "invalid number of fields"
+			errs = append(errs, Error{
+				Pos: i + 1,
+				Err: "invalid number of fields",
+			})
 
 			continue
 		}
@@ -95,22 +111,9 @@ func Parse(data []byte) (*File, error) {
 
 	currentModule.Versions = append(currentModule.Versions, currentVersion)
 	file.Modules = append(file.Modules, currentModule)
+	file.Errors = errs
 
-	errStr := "invalid sum file:"
-	var isErr bool
-
-	for i, err := range errs {
-		if err != "" {
-			isErr = true
-			errStr = fmt.Sprintf("%s\n%d: %s", errStr, i+1, err)
-		}
-	}
-
-	if isErr {
-		return nil, errors.New(errStr)
-	}
-
-	return &file, nil
+	return file
 }
 
 // Load loads and parses a sum file from the current module.
@@ -121,12 +124,14 @@ func Load() (*File, error) {
 		return nil, err
 	}
 
-	file := strings.TrimSuffix(strings.Trim(string(p), "\n"), ".mod") + ".sum"
+	filePath := strings.TrimSuffix(strings.Trim(string(p), "\n"), ".mod") + ".sum"
 
-	data, err := ioutil.ReadFile(file)
+	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	return Parse(data)
+	file := Parse(data)
+
+	return &file, nil
 }
