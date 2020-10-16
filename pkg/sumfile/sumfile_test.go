@@ -1,8 +1,10 @@
-package sumfile
+package sumfile_test
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/sagikazarmark/please-go-modules/pkg/sumfile"
 )
 
 func TestParse(t *testing.T) {
@@ -14,15 +16,15 @@ logur.dev/logur v0.16.2 h1:q4MxivaiTXiDHrQyeCH5WkwBLUrd6rM2lZlyztYvi4o=
 logur.dev/logur v0.16.2/go.mod h1:DyA5B+b6WjjCcnpE1+HGtTLh2lXooxRq+JmAwXMRK08=
 `
 
-		file := Parse([]byte(sum))
+		file := sumfile.Parse([]byte(sum))
 		if len(file.Errors) > 0 {
 			t.Fatal(file.Errors)
 		}
 
-		modules := []Module{
+		modules := []sumfile.Module{
 			{
 				Name: "logur.dev/adapter/logrus",
-				Versions: []Version{
+				Versions: []sumfile.Version{
 					{
 						Version:  "v0.5.0",
 						Sum:      "h1:cxsiceNXQLTKBk0keASgKAvrw9zzKa/XPE0Bn8tHXFI=",
@@ -32,7 +34,7 @@ logur.dev/logur v0.16.2/go.mod h1:DyA5B+b6WjjCcnpE1+HGtTLh2lXooxRq+JmAwXMRK08=
 			},
 			{
 				Name: "logur.dev/logur",
-				Versions: []Version{
+				Versions: []sumfile.Version{
 					{
 						Version:  "v0.16.1",
 						Sum:      "",
@@ -58,9 +60,9 @@ logur.dev/logur v0.16.2/go.mod h1:DyA5B+b6WjjCcnpE1+HGtTLh2lXooxRq+JmAwXMRK08=
 	t.Run("MissinTrailingNewline", func(t *testing.T) {
 		const sum = `logur.dev/adapter/logrus v0.5.0 h1:cxsiceNXQLTKBk0keASgKAvrw9zzKa/XPE0Bn8tHXFI=`
 
-		file := Parse([]byte(sum))
+		file := sumfile.Parse([]byte(sum))
 
-		errors := []Error{
+		errors := []sumfile.Error{
 			{
 				Pos: 1,
 				Err: "final line missing newline",
@@ -79,9 +81,9 @@ logur.dev/logur
 logur.dev/logur v0.16.2 h1:q4MxivaiTXiDHrQyeCH5WkwBLUrd6rM2lZlyztYvi4o= extra
 `
 
-		file := Parse([]byte(sum))
+		file := sumfile.Parse([]byte(sum))
 
-		errors := []Error{
+		errors := []sumfile.Error{
 			{
 				Pos: 2,
 				Err: "invalid number of fields",

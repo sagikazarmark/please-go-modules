@@ -7,6 +7,7 @@ go_library(
 
 go_test(
     name = "sumfile_test",
+    external = True,
     srcs = glob(["*_test.go"]),
     deps = [":sumfile"],
 )

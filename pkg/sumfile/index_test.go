@@ -1,13 +1,17 @@
-package sumfile
+package sumfile_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/sagikazarmark/please-go-modules/pkg/sumfile"
+)
 
 func TestIndex(t *testing.T) {
-	file := File{
-		Modules: []Module{
+	file := sumfile.File{
+		Modules: []sumfile.Module{
 			{
 				Name: "logur.dev/adapter/logrus",
-				Versions: []Version{
+				Versions: []sumfile.Version{
 					{
 						Version:  "v0.5.0",
 						Sum:      "h1:cxsiceNXQLTKBk0keASgKAvrw9zzKa/XPE0Bn8tHXFI=",
@@ -17,7 +21,7 @@ func TestIndex(t *testing.T) {
 			},
 			{
 				Name: "logur.dev/logur",
-				Versions: []Version{
+				Versions: []sumfile.Version{
 					{
 						Version:  "v0.16.1",
 						Sum:      "",
@@ -33,7 +37,7 @@ func TestIndex(t *testing.T) {
 		},
 	}
 
-	index := CreateIndex(file)
+	index := sumfile.CreateIndex(file)
 
 	t.Run("OK", func(t *testing.T) {
 		sum := index.Sum("logur.dev/logur", "v0.16.2")
