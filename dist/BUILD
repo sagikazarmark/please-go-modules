@@ -1,6 +1,11 @@
 subinclude("//build_defs")
 
-moddown_binary("moddown", CONFIG.MODDOWN_VERSION, visibility = ["PUBLIC"], host = False)
+moddown_binary(
+    "moddown",
+    CONFIG.MODDOWN_VERSION,
+    host = False,
+    visibility = ["PUBLIC"],
+)
 
 genrule(
     name = "build_file",

@@ -3,6 +3,7 @@ version = 15.6.0
 
 [parse]
 preloadbuilddefs = build_defs/binary.build_defs
+preloadbuilddefs = build_defs/config_rules.build_defs
 #preloadbuilddefs = build_defs/go_module.build_defs
 
 [go]
@@ -14,4 +15,4 @@ moddown-version = 0.3.1
 
 [alias "godeps"]
 desc = Generate third-party dependency rules for a Go project
-cmd = run //cmd/godeps -- -dir third_party/go -clean -genpkg -subinclude "//build_defs"
+cmd = run //cmd/godeps -- -dir third_party/go -clean -subinclude "//build_defs"

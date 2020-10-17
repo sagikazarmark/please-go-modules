@@ -14,7 +14,6 @@ fileexport(
     srcs = [
         "error.go",
         "go113.go",
-        "tools.go",
     ],
     tag = "go_source",
     deps = [":_multierr#download"],

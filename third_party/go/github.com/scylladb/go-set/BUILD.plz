@@ -1,0 +1,10 @@
+subinclude("//build_defs")
+
+go_module_download(
+    name = "go-set",
+    module = "github.com/scylladb/go-set",
+    sum = "h1:SkvlMCKhP0wyyct6j+0IHJkBkSZL+TDzZ4E7f7BCcRE=",
+    tag = "download",
+    version = "v1.0.2",
+    visibility = ["//third_party/go/github.com/scylladb/go-set/..."],
+)

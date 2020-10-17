@@ -15,7 +15,6 @@ fileexport(
         "atomic.go",
         "error.go",
         "string.go",
-        "tools.go",
     ],
     tag = "go_source",
     deps = [":_atomic#download"],

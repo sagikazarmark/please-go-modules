@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"go/build"
 	"log"
 	"os"
 	"path"
@@ -13,8 +12,8 @@ import (
 
 	buildify "github.com/bazelbuild/buildtools/build"
 
+	"github.com/sagikazarmark/please-go-modules/pkg/depgraph"
 	"github.com/sagikazarmark/please-go-modules/pkg/golist"
-	"github.com/sagikazarmark/please-go-modules/pkg/modgraph"
 	"github.com/sagikazarmark/please-go-modules/pkg/sumfile"
 )
 
@@ -23,27 +22,9 @@ var (
 	dir        = flag.String("dir", "", "Dump rules into a directory")
 	dryRun     = flag.Bool("dry-run", false, "Do not write anything to file")
 	clean      = flag.Bool("clean", false, "Clean target before generating new rules")
-	genpkg     = flag.Bool("genpkg", false, "Generate build targets for each package")
 	subinclude = flag.String("subinclude", "", "Include a rule in each file. (Useful when you don't want to duplicate the build definitions)")
 	base       = flag.String("base", "", "Prepend this path to the directory")
 )
-
-var supportedOSes = []string{"linux", "darwin"}
-
-func selectOSes() ([]string, string) {
-	cos := build.Default.GOOS
-
-	var oses []string
-	for _, sos := range supportedOSes {
-		if cos == sos {
-			continue
-		}
-
-		oses = append(oses, sos)
-	}
-
-	return oses, cos
-}
 
 func main() {
 	flag.Parse()
@@ -57,9 +38,29 @@ func main() {
 		panic(err)
 	}
 
-	deps, err := golist.Deps(rootModule)
-	if err != nil {
-		panic(err)
+	deps := make([]depgraph.GoPackageList, len(SupportedPlatforms))
+
+	for _, platform := range SupportedPlatforms {
+		options := golist.ListOptions{
+			Packages: []string{fmt.Sprintf("%s/...", rootModule)},
+			Deps:     true,
+			Test:     false,
+			OS:       platform.OS,
+			Arch:     platform.Arch,
+		}
+
+		platformDeps, err := golist.List(options)
+		if err != nil {
+			panic(err)
+		}
+
+		deps = append(deps, depgraph.GoPackageList{
+			Platform: depgraph.Platform{
+				OS:   platform.OS,
+				Arch: platform.Arch,
+			},
+			Packages: platformDeps,
+		})
 	}
 
 	sumFile, err := sumfile.Load()
@@ -67,13 +68,7 @@ func main() {
 		panic(err)
 	}
 
-	moduleList := modgraph.CalculateDepGraph(rootModule, deps, *sumFile)
-
-	depMap := make(map[string]golist.Package)
-
-	for _, dep := range deps {
-		depMap[dep.ImportPath] = dep
-	}
+	moduleList := depgraph.CalculateDepGraph(rootModule, deps, sumfile.CreateIndex(*sumFile))
 
 	buildFiles := make(map[string]*buildify.File)
 	var filePaths []string
@@ -84,11 +79,81 @@ func main() {
 	}
 
 	var generateOsConfig bool
-	alternateOSes, currentOS := selectOSes()
 
 	for _, module := range moduleList {
-		if *genpkg {
-			filePath := module.Module.Path
+		filePath := module.Path
+
+		// Get (and create) file
+		file, ok := buildFiles[filePath]
+		if !ok {
+			file = newFile(filePath, subinclude)
+			filePaths = append(filePaths, filePath)
+			buildFiles[filePath] = file
+		}
+
+		name := path.Base(module.Path)
+		visibility := fmt.Sprintf("//%s/...", path.Join(ruleDir, module.Path))
+
+		if ruleDir == "" {
+			name = strings.Replace(module.Path, "/", "_", -1)
+			visibility = ""
+		}
+
+		rule := &buildify.CallExpr{
+			X: &buildify.Ident{Name: "go_module_download"},
+			List: []buildify.Expr{
+				&buildify.AssignExpr{
+					LHS: &buildify.Ident{Name: "name"},
+					Op:  "=",
+					RHS: &buildify.StringExpr{Value: name},
+				},
+				&buildify.AssignExpr{
+					LHS: &buildify.Ident{Name: "tag"},
+					Op:  "=",
+					RHS: &buildify.StringExpr{Value: "download"},
+				},
+				&buildify.AssignExpr{
+					LHS: &buildify.Ident{Name: "module"},
+					Op:  "=",
+					RHS: &buildify.StringExpr{Value: module.Path},
+				},
+				&buildify.AssignExpr{
+					LHS: &buildify.Ident{Name: "version"},
+					Op:  "=",
+					RHS: &buildify.StringExpr{Value: module.Version},
+				},
+				&buildify.AssignExpr{
+					LHS: &buildify.Ident{Name: "sum"},
+					Op:  "=",
+					RHS: &buildify.StringExpr{Value: module.Sum},
+				},
+			},
+		}
+
+		if module.Replace != "" {
+			rule.List = append(rule.List, &buildify.AssignExpr{
+				LHS: &buildify.Ident{Name: "replace"},
+				Op:  "=",
+				RHS: &buildify.StringExpr{Value: module.Replace},
+			})
+		}
+
+		if visibility != "" {
+			rule.List = append(rule.List, &buildify.AssignExpr{
+				LHS: &buildify.Ident{Name: "visibility"},
+				Op:  "=",
+				RHS: &buildify.ListExpr{
+					List: []buildify.Expr{
+						&buildify.StringExpr{Value: visibility},
+					},
+				},
+			})
+		}
+
+		file.Stmt = append(file.Stmt, rule)
+
+		for _, pkg := range module.Packages {
+			filePath := pkg.ImportPath
 
 			// Get (and create) file
 			file, ok := buildFiles[filePath]
@@ -98,321 +163,237 @@ func main() {
 				buildFiles[filePath] = file
 			}
 
-			name := path.Base(module.Module.Path)
-			visibility := fmt.Sprintf("//%s/...", path.Join(ruleDir, module.Module.Path))
-
+			name := path.Base(pkg.ImportPath)
 			if ruleDir == "" {
-				name = strings.Replace(module.Module.Path, "/", "_", -1)
-				visibility = ""
+				name = strings.Replace(pkg.ImportPath, "/", "_", -1)
 			}
 
-			version := module.Module.Version
-			if module.Module.Replace != nil && module.Module.Replace.Version != "" {
-				version = module.Module.Replace.Version
-			}
+			var moduleSource, packageSource string
 
-			var replace string
-
-			if module.Module.Replace != nil {
-				replace = module.Module.Replace.Path
-			}
-
-			rule := &buildify.CallExpr{
-				X: &buildify.Ident{Name: "go_module_download"},
-				List: []buildify.Expr{
-					&buildify.AssignExpr{
-						LHS: &buildify.Ident{Name: "name"},
-						Op:  "=",
-						RHS: &buildify.StringExpr{Value: name},
-					},
-					&buildify.AssignExpr{
-						LHS: &buildify.Ident{Name: "tag"},
-						Op:  "=",
-						RHS: &buildify.StringExpr{Value: "download"},
-					},
-					&buildify.AssignExpr{
-						LHS: &buildify.Ident{Name: "module"},
-						Op:  "=",
-						RHS: &buildify.StringExpr{Value: module.Module.Path},
-					},
-					&buildify.AssignExpr{
-						LHS: &buildify.Ident{Name: "version"},
-						Op:  "=",
-						RHS: &buildify.StringExpr{Value: version},
-					},
-					&buildify.AssignExpr{
-						LHS: &buildify.Ident{Name: "sum"},
-						Op:  "=",
-						RHS: &buildify.StringExpr{Value: module.Sum},
-					},
-				},
-			}
-
-			if replace != "" {
-				rule.List = append(rule.List, &buildify.AssignExpr{
-					LHS: &buildify.Ident{Name: "replace"},
-					Op:  "=",
-					RHS: &buildify.StringExpr{Value: replace},
-				})
-			}
-
-			if visibility != "" {
-				rule.List = append(rule.List, &buildify.AssignExpr{
-					LHS: &buildify.Ident{Name: "visibility"},
-					Op:  "=",
-					RHS: &buildify.ListExpr{
-						List: []buildify.Expr{
-							&buildify.StringExpr{Value: visibility},
-						},
-					},
-				})
-			}
-
-			file.Stmt = append(file.Stmt, rule)
-
-			for _, pkg := range module.Packages {
-				filePath := pkg.ImportPath
-
-				// Get (and create) file
-				file, ok := buildFiles[filePath]
-				if !ok {
-					file = newFile(filePath, subinclude)
-					filePaths = append(filePaths, filePath)
-					buildFiles[filePath] = file
-				}
-
-				name := path.Base(pkg.ImportPath)
+			// This isn't the root package, so we need to fetch the source
+			if module.Path != pkg.ImportPath {
+				moduleSource = fmt.Sprintf("//%s:_%s#download", path.Join(ruleDir, module.Path), path.Base(module.Path))
 				if ruleDir == "" {
-					name = strings.Replace(pkg.ImportPath, "/", "_", -1)
+					moduleSource = fmt.Sprintf(":_%s#download", strings.Replace(module.Path, "/", "_", -1))
 				}
 
-				var moduleSource, packageSource string
+				packageSource = strings.TrimPrefix(pkg.ImportPath, module.Path+"/")
+			} else {
+				moduleSource = fmt.Sprintf(":_%s#download", name)
+			}
 
-				// This isn't the root package, so we need to fetch the source
-				if module.Module.Path != pkg.ImportPath {
-					moduleSource = fmt.Sprintf("//%s:_%s#download", path.Join(ruleDir, module.Module.Path), path.Base(module.Module.Path))
-					if ruleDir == "" {
-						moduleSource = fmt.Sprintf(":_%s#download", strings.Replace(module.Module.Path, "/", "_", -1))
-					}
+			file.Stmt = append(file.Stmt, platformSourceFileRule(
+				pkg.GoFiles.Common,
+				toPlatformSelectSet(ruleDir, pkg.GoFiles.PerPlatform),
+				name,
+				"go_source",
+				moduleSource,
+				packageSource,
+			))
 
-					packageSource = strings.TrimPrefix(pkg.ImportPath, module.Module.Path+"/")
-				} else {
-					moduleSource = fmt.Sprintf(":_%s#download", name)
+			isAsm := pkg.IsASM()
+
+			if isAsm {
+				file.Stmt = append(file.Stmt, platformSourceFileRule(
+					pkg.SFiles.Common,
+					toPlatformSelectSet(ruleDir, pkg.SFiles.PerPlatform),
+					name,
+					"s_source",
+					moduleSource,
+					packageSource,
+				))
+			}
+
+			isCgo := pkg.IsCGO()
+
+			if isCgo {
+				generateOsConfig = true
+
+				file.Stmt = append(file.Stmt, platformSourceFileRule(
+					pkg.CgoFiles.Common,
+					toPlatformSelectSet(ruleDir, pkg.CgoFiles.PerPlatform),
+					name,
+					"cgo_source",
+					moduleSource,
+					packageSource,
+				))
+
+				file.Stmt = append(file.Stmt, platformSourceFileRule(
+					pkg.CFiles.Common,
+					toPlatformSelectSet(ruleDir, pkg.CFiles.PerPlatform),
+					name,
+					"c_source",
+					moduleSource,
+					packageSource,
+				))
+
+				file.Stmt = append(file.Stmt, platformSourceFileRule(
+					pkg.HFiles.Common,
+					toPlatformSelectSet(ruleDir, pkg.HFiles.PerPlatform),
+					name,
+					"h_source",
+					moduleSource,
+					packageSource,
+				))
+			}
+
+			depExpr := platformDepExpr(ruleDir, pkg.Imports.Common, toPlatformSelectSet(ruleDir, pkg.Imports.PerPlatform))
+			if depExpr == nil {
+				depExpr = &buildify.ListExpr{}
+			}
+
+			if isCgo {
+				cgoldflagsExpr := platformList(pkg.CgoLDFLAGS.Common, toPlatformSelectSet(ruleDir, pkg.CgoLDFLAGS.PerPlatform))
+				if cgoldflagsExpr == nil {
+					cgoldflagsExpr = &buildify.ListExpr{}
 				}
 
-				var gofiles []string
-				for _, f := range pkg.GoFiles {
-					gofiles = append(gofiles, f)
+				cgocFlagsExpr := platformCgocFlagsExpr(
+					pkg.CgoCFLAGS.Common,
+					toPlatformSelectSet(ruleDir, pkg.CgoCFLAGS.PerPlatform),
+					pkg,
+					module,
+				)
+				if cgocFlagsExpr == nil {
+					cgocFlagsExpr = &buildify.ListExpr{}
 				}
 
-				// Include ignored files (required for cross-compilation)
-				for _, f := range pkg.IgnoredGoFiles {
-					if strings.HasSuffix(f, "_test.go") {
-						continue // Skip test files
-					}
-
-					gofiles = append(gofiles, f)
-				}
-
-				file.Stmt = append(file.Stmt, sourceFileRule(gofiles, name, "go_source", moduleSource, packageSource))
-
-				isAsm := len(pkg.SFiles) > 0
-
-				if isAsm {
-					file.Stmt = append(file.Stmt, sourceFileRule(pkg.SFiles, name, "s_source", moduleSource, packageSource))
-				}
-
-				isCgo := len(pkg.CgoFiles) > 0
-
-				if isCgo {
-					generateOsConfig = true
-
-					file.Stmt = append(file.Stmt, sourceFileRule(pkg.CgoFiles, name, "cgo_source", moduleSource, packageSource))
-					file.Stmt = append(file.Stmt, sourceFileRule(pkg.CFiles, name, "c_source", moduleSource, packageSource))
-					file.Stmt = append(file.Stmt, sourceFileRule(pkg.HFiles, name, "h_source", moduleSource, packageSource))
-				}
-
-				var deps []string
-				for _, depPath := range pkg.Imports {
-					if depMap[depPath].Standard {
-						continue
-					}
-
-					if depPath == "C" {
-						continue
-					}
-
-					if ruleDir == "" {
-						deps = append(deps, ":"+strings.Replace(depPath, "/", "_", -1))
-
-						continue
-					}
-
-					deps = append(deps, fmt.Sprintf("//%s", path.Join(ruleDir, depPath)))
-				}
-
-				if isCgo {
-					cgocflags := map[string][]string{
-						fmt.Sprintf("//%s:%s", path.Join(ruleDir, "__config"), currentOS): filterCgoCFlags(pkg.CgoCFLAGS, pkg, module),
-					}
-
-					cgoldflags := map[string][]string{
-						fmt.Sprintf("//%s:%s", path.Join(ruleDir, "__config"), currentOS): pkg.CgoLDFLAGS,
-					}
-
-					for _, os := range alternateOSes {
-						ctxt := build.Default
-						ctxt.GOOS = os
-						ctxt.CgoEnabled = true
-
-						osPkg, err := ctxt.ImportDir(pkg.Dir, build.ImportComment)
-						if err != nil {
-							panic(err)
-						}
-
-						cgocflags[fmt.Sprintf("//%s:%s", path.Join(ruleDir, "__config"), os)] = filterCgoCFlags(osPkg.CgoCFLAGS, pkg, module)
-						cgoldflags[fmt.Sprintf("//%s:%s", path.Join(ruleDir, "__config"), os)] = osPkg.CgoLDFLAGS
-					}
-
-					rule := &buildify.CallExpr{
-						X: &buildify.Ident{Name: "cgo_library"},
-						List: []buildify.Expr{
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "name"},
-								Op:  "=",
-								RHS: &buildify.StringExpr{Value: name},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "srcs"},
-								Op:  "=",
-								RHS: &buildify.ListExpr{
-									List: []buildify.Expr{
-										&buildify.StringExpr{Value: fmt.Sprintf(":_%s#cgo_source", name)},
-									},
-								},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "go_srcs"},
-								Op:  "=",
-								RHS: &buildify.ListExpr{
-									List: []buildify.Expr{
-										&buildify.StringExpr{Value: fmt.Sprintf(":_%s#go_source", name)},
-									},
-								},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "c_srcs"},
-								Op:  "=",
-								RHS: &buildify.ListExpr{
-									List: []buildify.Expr{
-										&buildify.StringExpr{Value: fmt.Sprintf(":_%s#c_source", name)},
-									},
-								},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "hdrs"},
-								Op:  "=",
-								RHS: &buildify.ListExpr{
-									List: []buildify.Expr{
-										&buildify.StringExpr{Value: fmt.Sprintf(":_%s#h_source", name)},
-									},
-								},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "visibility"},
-								Op:  "=",
-								RHS: &buildify.ListExpr{
-									List: []buildify.Expr{
-										&buildify.StringExpr{Value: "PUBLIC"},
-									},
-								},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "import_path"},
-								Op:  "=",
-								RHS: &buildify.StringExpr{Value: pkg.ImportPath},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "deps"},
-								Op:  "=",
-								RHS: stringListExpr(deps),
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "compiler_flags"},
-								Op:  "=",
-								RHS: stringMapListSelect(cgocflags),
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "linker_flags"},
-								Op:  "=",
-								RHS: stringMapListSelect(cgoldflags),
-							},
+				rule := &buildify.CallExpr{
+					X: &buildify.Ident{Name: "cgo_library"},
+					List: []buildify.Expr{
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "name"},
+							Op:  "=",
+							RHS: &buildify.StringExpr{Value: name},
 						},
-					}
-
-					file.Stmt = append(file.Stmt, rule)
-				} else {
-					rule := &buildify.CallExpr{
-						X: &buildify.Ident{Name: "go_library"},
-						List: []buildify.Expr{
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "name"},
-								Op:  "=",
-								RHS: &buildify.StringExpr{Value: name},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "srcs"},
-								Op:  "=",
-								RHS: &buildify.ListExpr{
-									List: []buildify.Expr{
-										&buildify.StringExpr{Value: fmt.Sprintf(":_%s#go_source", name)},
-									},
-								},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "visibility"},
-								Op:  "=",
-								RHS: &buildify.ListExpr{
-									List: []buildify.Expr{
-										&buildify.StringExpr{Value: "PUBLIC"},
-									},
-								},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "cover"},
-								Op:  "=",
-								RHS: &buildify.Ident{Name: "False"},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "import_path"},
-								Op:  "=",
-								RHS: &buildify.StringExpr{Value: pkg.ImportPath},
-							},
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "deps"},
-								Op:  "=",
-								RHS: stringListExpr(deps),
-							},
-						},
-					}
-
-					if isAsm {
-						rule.List = append(rule.List, &buildify.AssignExpr{
-							LHS: &buildify.Ident{Name: "asm_srcs"},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "srcs"},
 							Op:  "=",
 							RHS: &buildify.ListExpr{
 								List: []buildify.Expr{
-									&buildify.StringExpr{Value: fmt.Sprintf(":_%s#s_source", name)},
+									&buildify.StringExpr{Value: fmt.Sprintf(":_%s#cgo_source", name)},
 								},
 							},
-						})
-					}
-
-					file.Stmt = append(file.Stmt, rule)
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "go_srcs"},
+							Op:  "=",
+							RHS: &buildify.ListExpr{
+								List: []buildify.Expr{
+									&buildify.StringExpr{Value: fmt.Sprintf(":_%s#go_source", name)},
+								},
+							},
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "c_srcs"},
+							Op:  "=",
+							RHS: &buildify.ListExpr{
+								List: []buildify.Expr{
+									&buildify.StringExpr{Value: fmt.Sprintf(":_%s#c_source", name)},
+								},
+							},
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "hdrs"},
+							Op:  "=",
+							RHS: &buildify.ListExpr{
+								List: []buildify.Expr{
+									&buildify.StringExpr{Value: fmt.Sprintf(":_%s#h_source", name)},
+								},
+							},
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "visibility"},
+							Op:  "=",
+							RHS: &buildify.ListExpr{
+								List: []buildify.Expr{
+									&buildify.StringExpr{Value: "PUBLIC"},
+								},
+							},
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "import_path"},
+							Op:  "=",
+							RHS: &buildify.StringExpr{Value: pkg.ImportPath},
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "deps"},
+							Op:  "=",
+							RHS: depExpr,
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "compiler_flags"},
+							Op:  "=",
+							RHS: cgocFlagsExpr,
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "linker_flags"},
+							Op:  "=",
+							RHS: cgoldflagsExpr,
+						},
+					},
 				}
+
+				file.Stmt = append(file.Stmt, rule)
+			} else {
+				rule := &buildify.CallExpr{
+					X: &buildify.Ident{Name: "go_library"},
+					List: []buildify.Expr{
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "name"},
+							Op:  "=",
+							RHS: &buildify.StringExpr{Value: name},
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "srcs"},
+							Op:  "=",
+							RHS: &buildify.ListExpr{
+								List: []buildify.Expr{
+									&buildify.StringExpr{Value: fmt.Sprintf(":_%s#go_source", name)},
+								},
+							},
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "visibility"},
+							Op:  "=",
+							RHS: &buildify.ListExpr{
+								List: []buildify.Expr{
+									&buildify.StringExpr{Value: "PUBLIC"},
+								},
+							},
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "cover"},
+							Op:  "=",
+							RHS: &buildify.Ident{Name: "False"},
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "import_path"},
+							Op:  "=",
+							RHS: &buildify.StringExpr{Value: pkg.ImportPath},
+						},
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "deps"},
+							Op:  "=",
+							RHS: depExpr,
+						},
+					},
+				}
+
+				if isAsm {
+					rule.List = append(rule.List, &buildify.AssignExpr{
+						LHS: &buildify.Ident{Name: "asm_srcs"},
+						Op:  "=",
+						RHS: &buildify.ListExpr{
+							List: []buildify.Expr{
+								&buildify.StringExpr{Value: fmt.Sprintf(":_%s#s_source", name)},
+							},
+						},
+					})
+				}
+
+				file.Stmt = append(file.Stmt, rule)
 			}
-		} else {
-			panic("non-genpkg mode is unsopported ath the moment")
 		}
 	}
 
@@ -427,33 +408,40 @@ func main() {
 				Type: buildify.TypeBuild,
 			}
 
-			file.Stmt = append(file.Stmt, &buildify.CallExpr{
-				X: &buildify.Ident{Name: "package"},
-				List: []buildify.Expr{
-					&buildify.AssignExpr{
-						LHS: &buildify.Ident{Name: "default_visibility"},
-						Op:  "=",
-						RHS: &buildify.ListExpr{
-							List: []buildify.Expr{
-								&buildify.StringExpr{Value: "PUBLIC"},
+			if ruleDir != "" {
+				file.Stmt = append(file.Stmt, &buildify.CallExpr{
+					X: &buildify.Ident{Name: "package"},
+					List: []buildify.Expr{
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "default_visibility"},
+							Op:  "=",
+							RHS: &buildify.ListExpr{
+								List: []buildify.Expr{
+									&buildify.StringExpr{Value: "PUBLIC"},
+								},
 							},
 						},
 					},
-				},
-			})
+				})
+			}
 
 			filePaths = append(filePaths, filePath)
 			buildFiles[filePath] = file
 		}
 
-		for _, os := range supportedOSes {
+		for _, platform := range SupportedPlatforms {
+			ruleName := platform.String()
+			if ruleDir == "" {
+				ruleName = "__config_" + ruleName
+			}
+
 			rule := &buildify.CallExpr{
 				X: &buildify.Ident{Name: "config_setting"},
 				List: []buildify.Expr{
 					&buildify.AssignExpr{
 						LHS: &buildify.Ident{Name: "name"},
 						Op:  "=",
-						RHS: &buildify.StringExpr{Value: os},
+						RHS: &buildify.StringExpr{Value: ruleName},
 					},
 					&buildify.AssignExpr{
 						LHS: &buildify.Ident{Name: "values"},
@@ -462,7 +450,11 @@ func main() {
 							List: []*buildify.KeyValueExpr{
 								{
 									Key:   &buildify.StringExpr{Value: "os"},
-									Value: &buildify.StringExpr{Value: os},
+									Value: &buildify.StringExpr{Value: platform.OS},
+								},
+								{
+									Key:   &buildify.StringExpr{Value: "cpu"},
+									Value: &buildify.StringExpr{Value: platform.Arch},
 								},
 							},
 						},
@@ -566,7 +558,53 @@ func stringListExpr(s []string) *buildify.ListExpr {
 	return list
 }
 
-func sourceFileRule(files []string, name string, tag string, moduleSource string, packageSource string) *buildify.CallExpr {
+func stringMapListSelect(s map[string][]string) buildify.Expr {
+	keys := make([]string, 0, len(s))
+
+	var hasValues bool
+
+	for key, value := range s {
+		keys = append(keys, key)
+
+		if len(value) > 0 {
+			hasValues = true
+		}
+	}
+
+	if !hasValues {
+		return nil
+	}
+
+	sort.Strings(keys)
+
+	dict := &buildify.DictExpr{}
+
+	for _, key := range keys {
+		dict.List = append(dict.List, &buildify.KeyValueExpr{
+			Key:   &buildify.StringExpr{Value: key},
+			Value: stringListExpr(s[key]),
+		})
+	}
+
+	dict.List = append(dict.List, &buildify.KeyValueExpr{
+		Key:   &buildify.StringExpr{Value: "default"},
+		Value: &buildify.ListExpr{},
+	})
+
+	return &buildify.CallExpr{
+		X:    &buildify.Ident{Name: "select"},
+		List: []buildify.Expr{dict},
+	}
+}
+
+func platformSourceFileRule(
+	commonFiles []string,
+	platformFiles map[string][]string,
+	name string,
+	tag string,
+	moduleSource string,
+	packageSource string,
+) *buildify.CallExpr {
 	rule := &buildify.CallExpr{
 		X: &buildify.Ident{Name: "fileexport"},
 		List: []buildify.Expr{
@@ -592,22 +630,78 @@ func sourceFileRule(files []string, name string, tag string, moduleSource string
 		},
 	}
 
-	srcsList := &buildify.ListExpr{}
-
-	for _, file := range files {
-		srcsList.List = append(srcsList.List, &buildify.StringExpr{Value: path.Join(packageSource, file)})
+	var commonFileList []string
+	for _, file := range commonFiles {
+		commonFileList = append(commonFileList, path.Join(packageSource, file))
 	}
 
-	rule.List = append(rule.List, &buildify.AssignExpr{
-		LHS: &buildify.Ident{Name: "srcs"},
-		Op:  "=",
-		RHS: srcsList,
-	})
+	platformFileList := make(map[string][]string, len(platformFiles))
+
+	for platform, list := range platformFiles {
+		newList := make([]string, 0, len(list))
+
+		for _, file := range list {
+			newList = append(newList, path.Join(packageSource, file))
+		}
+
+		platformFileList[platform] = newList
+	}
+
+	srcs := platformList(commonFileList, platformFileList)
+	if srcs != nil {
+		rule.List = append(rule.List, &buildify.AssignExpr{
+			LHS: &buildify.Ident{Name: "srcs"},
+			Op:  "=",
+			RHS: srcs,
+		})
+	}
 
 	return rule
 }
 
-func filterCgoCFlags(flags []string, pkg golist.Package, mod modgraph.Module) []string {
+func platformDepExpr(ruleDir string, common []string, platform map[string][]string) buildify.Expr {
+	newCommon := make([]string, 0, len(common))
+
+	for _, v := range common {
+		newCommon = append(newCommon, formatDepPath(ruleDir, v))
+	}
+
+	newPlatform := make(map[string][]string, len(platform))
+
+	for platform, list := range platform {
+		newList := make([]string, 0, len(list))
+
+		for _, v := range list {
+			newList = append(newList, formatDepPath(ruleDir, v))
+		}
+
+		newPlatform[platform] = newList
+	}
+
+	return platformList(newCommon, newPlatform)
+}
+
+func formatDepPath(ruleDir string, depPath string) string {
+	if ruleDir == "" {
+		return ":" + strings.Replace(depPath, "/", "_", -1)
+	}
+
+	return fmt.Sprintf("//%s", path.Join(ruleDir, depPath))
+}
+
+func platformCgocFlagsExpr(common []string, platform map[string][]string, pkg depgraph.Package2, mod depgraph.Module) buildify.Expr {
+	newCommon := filterCgoCFlags(common, pkg, mod)
+
+	newPlatform := make(map[string][]string, len(platform))
+
+	for platform, list := range platform {
+		newPlatform[platform] = filterCgoCFlags(list, pkg, mod)
+	}
+
+	return platformList(newCommon, newPlatform)
+}
+
+func filterCgoCFlags(flags []string, pkg depgraph.Package2, mod depgraph.Module) []string {
 	result := []string{}
 
 	for _, f := range flags {
@@ -616,7 +710,7 @@ func filterCgoCFlags(flags []string, pkg golist.Package, mod modgraph.Module) []
 		// TODO: log ommited flags
 		if strings.HasPrefix(f, "-I") {
 			// Module or import path reference
-			if strings.Contains(f, fmt.Sprintf("pkg/mod/%s", mod.Module.Path)) || strings.Contains(f, pkg.ImportPath) {
+			if strings.Contains(f, fmt.Sprintf("pkg/mod/%s", mod.Path)) || strings.Contains(f, pkg.ImportPath) {
 				result = append(result, "-I ${PKG}")
 			}
 
@@ -629,26 +723,42 @@ func filterCgoCFlags(flags []string, pkg golist.Package, mod modgraph.Module) []
 	return result
 }
 
-func stringMapListSelect(s map[string][]string) buildify.Expr {
-	keys := make([]string, 0, len(s))
+func platformList(common []string, perPlatform map[string][]string) buildify.Expr {
+	commonList := &buildify.ListExpr{}
 
-	for key := range s {
-		keys = append(keys, key)
+	for _, s := range common {
+		commonList.List = append(commonList.List, &buildify.StringExpr{Value: s})
 	}
 
-	sort.Strings(keys)
+	platformSelect := stringMapListSelect(perPlatform)
 
-	dict := &buildify.DictExpr{}
-
-	for _, key := range keys {
-		dict.List = append(dict.List, &buildify.KeyValueExpr{
-			Key:   &buildify.StringExpr{Value: key},
-			Value: stringListExpr(s[key]),
-		})
+	if len(commonList.List) > 0 && platformSelect != nil {
+		return &buildify.BinaryExpr{
+			X:  commonList,
+			Op: "+",
+			Y:  platformSelect,
+		}
+	} else if len(commonList.List) > 0 {
+		return commonList
+	} else if platformSelect != nil {
+		return platformSelect
 	}
 
-	return &buildify.CallExpr{
-		X:    &buildify.Ident{Name: "select"},
-		List: []buildify.Expr{dict},
+	return nil
+}
+
+func toPlatformSelectSet(ruleDir string, sets map[depgraph.Platform][]string) map[string][]string {
+	platformSets := make(map[string][]string, len(sets))
+
+	for platform, set := range sets {
+		if ruleDir == "" {
+			platformSets[fmt.Sprintf(":__config_%s", platform.String())] = set
+
+			continue
+		}
+
+		platformSets[fmt.Sprintf("//%s:%s", path.Join(ruleDir, "__config"), platform.String())] = set
 	}
+
+	return platformSets
 }

@@ -1,0 +1,23 @@
+subinclude("//build_defs")
+
+fileexport(
+    name = "bidirule",
+    srcs = [
+        "secure/bidirule/bidirule.go",
+        "secure/bidirule/bidirule10.0.0.go",
+    ],
+    tag = "go_source",
+    deps = ["//example/third_party/go/golang.org/x/text:_text#download"],
+)
+
+go_library(
+    name = "bidirule",
+    srcs = [":_bidirule#go_source"],
+    cover = False,
+    import_path = "golang.org/x/text/secure/bidirule",
+    visibility = ["PUBLIC"],
+    deps = [
+        "//example/third_party/go/golang.org/x/text/transform",
+        "//example/third_party/go/golang.org/x/text/unicode/bidi",
+    ],
+)
