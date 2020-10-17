@@ -408,33 +408,40 @@ func main() {
 				Type: buildify.TypeBuild,
 			}
 
-			file.Stmt = append(file.Stmt, &buildify.CallExpr{
-				X: &buildify.Ident{Name: "package"},
-				List: []buildify.Expr{
-					&buildify.AssignExpr{
-						LHS: &buildify.Ident{Name: "default_visibility"},
-						Op:  "=",
-						RHS: &buildify.ListExpr{
-							List: []buildify.Expr{
-								&buildify.StringExpr{Value: "PUBLIC"},
+			if ruleDir != "" {
+				file.Stmt = append(file.Stmt, &buildify.CallExpr{
+					X: &buildify.Ident{Name: "package"},
+					List: []buildify.Expr{
+						&buildify.AssignExpr{
+							LHS: &buildify.Ident{Name: "default_visibility"},
+							Op:  "=",
+							RHS: &buildify.ListExpr{
+								List: []buildify.Expr{
+									&buildify.StringExpr{Value: "PUBLIC"},
+								},
 							},
 						},
 					},
-				},
-			})
+				})
+			}
 
 			filePaths = append(filePaths, filePath)
 			buildFiles[filePath] = file
 		}
 
 		for _, platform := range SupportedPlatforms {
+			ruleName := platform.String()
+			if ruleDir == "" {
+				ruleName = "__config_" + ruleName
+			}
+
 			rule := &buildify.CallExpr{
 				X: &buildify.Ident{Name: "config_setting"},
 				List: []buildify.Expr{
 					&buildify.AssignExpr{
 						LHS: &buildify.Ident{Name: "name"},
 						Op:  "=",
-						RHS: &buildify.StringExpr{Value: platform.String()},
+						RHS: &buildify.StringExpr{Value: ruleName},
 					},
 					&buildify.AssignExpr{
 						LHS: &buildify.Ident{Name: "values"},
@@ -744,6 +751,12 @@ func toPlatformSelectSet(ruleDir string, sets map[depgraph.Platform][]string) ma
 	platformSets := make(map[string][]string, len(sets))
 
 	for platform, set := range sets {
+		if ruleDir == "" {
+			platformSets[fmt.Sprintf(":__config_%s", platform.String())] = set
+
+			continue
+		}
+
 		platformSets[fmt.Sprintf("//%s:%s", path.Join(ruleDir, "__config"), platform.String())] = set
 	}
 
