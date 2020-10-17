@@ -102,7 +102,7 @@ func List(options ListOptions) ([]Package, error) {
 	cmd := exec.Command("go", args...)
 	cmd.Env = os.Environ()
 
-	cmd.Env = append(cmd.Env, "GOOS="+options.GetOS(), "GOARCH="+options.GetArch())
+	cmd.Env = append(cmd.Env, "GOOS="+options.GetOS(), "GOARCH="+options.GetArch(), "CGO_ENABLED=1")
 
 	p, err := cmd.Output()
 	if err != nil {
