@@ -3,6 +3,7 @@ version = 15.6.0
 
 [parse]
 preloadbuilddefs = build_defs/binary.build_defs
+preloadbuilddefs = build_defs/config_rules.build_defs
 #preloadbuilddefs = build_defs/go_module.build_defs
 
 [go]
