@@ -1,4 +1,4 @@
-module github.com/sagikazarmark/please-go-modules/example4
+module github.com/sagikazarmark/please-go-modules/example
 
 go 1.15
 

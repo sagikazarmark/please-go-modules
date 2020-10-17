@@ -16247,12 +16247,12 @@
 }
 {
 	"Dir": "/Users/mark/Projects/sagikazarmark/please-go-modules/example",
-	"ImportPath": "github.com/sagikazarmark/please-go-modules/example4",
+	"ImportPath": "github.com/sagikazarmark/please-go-modules/example",
 	"Name": "main",
-	"Target": "/Users/mark/.go/bin/linux_amd64/example4",
+	"Target": "/Users/mark/.go/bin/linux_amd64/example",
 	"Root": "/Users/mark/Projects/sagikazarmark/please-go-modules/example",
 	"Module": {
-		"Path": "github.com/sagikazarmark/please-go-modules/example4",
+		"Path": "github.com/sagikazarmark/please-go-modules/example",
 		"Main": true,
 		"Dir": "/Users/mark/Projects/sagikazarmark/please-go-modules/example",
 		"GoMod": "/Users/mark/Projects/sagikazarmark/please-go-modules/example/go.mod",

@@ -53,7 +53,7 @@ func TestCalculateDepGraph(t *testing.T) {
 
 	sumFile := sumfile.Parse(sumFileContent)
 
-	modules := CalculateDepGraph("github.com/sagikazarmark/please-go-modules/example4", packageLists, sumfile.CreateIndex(sumFile))
+	modules := CalculateDepGraph("github.com/sagikazarmark/please-go-modules/example", packageLists, sumfile.CreateIndex(sumFile))
 
 	t.Logf("%#v", modules)
 }
