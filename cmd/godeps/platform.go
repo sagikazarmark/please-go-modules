@@ -6,6 +6,10 @@ type Platform struct {
 	Arch string
 }
 
+func (p Platform) String() string {
+	return p.OS + "_" + p.Arch
+}
+
 // SupportedPlatforms lists all the supported platforms.
 var SupportedPlatforms = []Platform{
 	{"linux", "amd64"},

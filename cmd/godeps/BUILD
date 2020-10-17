@@ -4,7 +4,7 @@ go_binary(
     visibility = ["PUBLIC"],
     deps = [
         "//pkg/golist",
-        "//pkg/modgraph",
+        "//pkg/depgraph",
         "//pkg/sumfile",
         "//third_party/go/github.com/bazelbuild/buildtools/build",
     ],
