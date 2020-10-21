@@ -44,7 +44,7 @@ func main() {
 		options := golist.ListOptions{
 			Packages: []string{fmt.Sprintf("%s/...", rootModule)},
 			Deps:     true,
-			Test:     false,
+			Test:     true,
 			OS:       platform.OS,
 			Arch:     platform.Arch,
 		}

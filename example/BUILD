@@ -9,3 +9,11 @@ go_binary(
         "//example/third_party/go/google.golang.org/grpc",
     ],
 )
+
+go_test(
+    name = "example_test",
+    srcs = ["main_test.go"],
+    deps = [
+        "//example/third_party/go/github.com/stretchr/testify/assert",
+    ],
+)
