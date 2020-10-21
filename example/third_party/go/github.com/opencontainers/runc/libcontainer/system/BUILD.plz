@@ -1,0 +1,53 @@
+subinclude("//build_defs")
+
+fileexport(
+    name = "system",
+    srcs = ["libcontainer/system/proc.go"] + select({
+        "//example/third_party/go/__config:darwin_amd64": ["libcontainer/system/unsupported.go"],
+        "//example/third_party/go/__config:linux_amd64": [
+            "libcontainer/system/linux.go",
+            "libcontainer/system/setns_linux.go",
+            "libcontainer/system/syscall_linux_64.go",
+            "libcontainer/system/xattrs_linux.go",
+        ],
+        "default": [],
+    }),
+    tag = "go_source",
+    deps = ["//example/third_party/go/github.com/opencontainers/runc:_runc#download"],
+)
+
+fileexport(
+    name = "system",
+    srcs = select({
+        "//example/third_party/go/__config:darwin_amd64": [],
+        "//example/third_party/go/__config:linux_amd64": ["libcontainer/system/sysconfig.go"],
+        "default": [],
+    }),
+    tag = "cgo_source",
+    deps = ["//example/third_party/go/github.com/opencontainers/runc:_runc#download"],
+)
+
+fileexport(
+    name = "system",
+    tag = "c_source",
+    deps = ["//example/third_party/go/github.com/opencontainers/runc:_runc#download"],
+)
+
+fileexport(
+    name = "system",
+    tag = "h_source",
+    deps = ["//example/third_party/go/github.com/opencontainers/runc:_runc#download"],
+)
+
+cgo_library(
+    name = "system",
+    srcs = [":_system#cgo_source"],
+    hdrs = [":_system#h_source"],
+    c_srcs = [":_system#c_source"],
+    compiler_flags = [],
+    go_srcs = [":_system#go_source"],
+    import_path = "github.com/opencontainers/runc/libcontainer/system",
+    linker_flags = [],
+    visibility = ["PUBLIC"],
+    deps = [],
+)
