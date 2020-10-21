@@ -38,7 +38,7 @@ func main() {
 		panic(err)
 	}
 
-	deps := make([]depgraph.GoPackageList, len(SupportedPlatforms))
+	deps := make([]depgraph.GoPackageList, 0, len(SupportedPlatforms))
 
 	for _, platform := range SupportedPlatforms {
 		options := golist.ListOptions{
