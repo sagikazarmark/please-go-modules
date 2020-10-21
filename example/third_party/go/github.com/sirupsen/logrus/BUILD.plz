@@ -1,0 +1,42 @@
+subinclude("//build_defs")
+
+go_module_download(
+    name = "logrus",
+    module = "github.com/sirupsen/logrus",
+    sum = "h1:ShrD1U9pZB12TX0cVy0DtePoCH97K8EtX+mg7ZARUtM=",
+    tag = "download",
+    version = "v1.7.0",
+    visibility = ["//example/third_party/go/github.com/sirupsen/logrus/..."],
+)
+
+fileexport(
+    name = "logrus",
+    srcs = select({
+        "//example/third_party/go/__config:darwin_amd64": [],
+        "//example/third_party/go/__config:linux_amd64": [
+            "alt_exit.go",
+            "buffer_pool.go",
+            "doc.go",
+            "entry.go",
+            "exported.go",
+            "formatter.go",
+            "hooks.go",
+            "json_formatter.go",
+            "logger.go",
+            "logrus.go",
+            "terminal_check_notappengine.go",
+            "terminal_check_unix.go",
+            "text_formatter.go",
+            "writer.go",
+        ],
+        "default": [],
+    }),
+    tag = "go_source",
+    deps = [":_logrus#download"],
+)
+
+if select_config([{
+    "os": "linux",
+    "cpu": "amd64",
+}]):
+    go_library(name = "logrus", srcs = [":_logrus#go_source"], cover = False, import_path = "github.com/sirupsen/logrus", visibility = ["PUBLIC"], deps = select({"//example/third_party/go/__config:darwin_amd64": [], "//example/third_party/go/__config:linux_amd64": ["//example/third_party/go/golang.org/x/sys/unix"], "default": []}))

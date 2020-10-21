@@ -1,0 +1,59 @@
+subinclude("//build_defs")
+
+fileexport(
+    name = "sys",
+    srcs = [
+        "sys/env.go",
+        "sys/filesys.go",
+        "sys/filesys_unix.go",
+        "sys/oom_unix.go",
+        "sys/socket_unix.go",
+    ] + select({
+        "//example/third_party/go/__config:darwin_amd64": [
+            "sys/stat_bsd.go",
+            "sys/userns_unsupported.go",
+        ],
+        "//example/third_party/go/__config:linux_amd64": [
+            "sys/epoll.go",
+            "sys/fds.go",
+            "sys/mount_linux.go",
+            "sys/stat_unix.go",
+            "sys/subprocess_unsafe_linux.go",
+            "sys/userns_linux.go",
+        ],
+        "default": [],
+    }),
+    tag = "go_source",
+    deps = ["//example/third_party/go/github.com/containerd/containerd:_containerd#download"],
+)
+
+fileexport(
+    name = "sys",
+    srcs = select({
+        "//example/third_party/go/__config:darwin_amd64": [],
+        "//example/third_party/go/__config:linux_amd64": ["sys/subprocess_unsafe_linux.s"],
+        "default": [],
+    }),
+    tag = "s_source",
+    deps = ["//example/third_party/go/github.com/containerd/containerd:_containerd#download"],
+)
+
+go_library(
+    name = "sys",
+    srcs = [":_sys#go_source"],
+    asm_srcs = select({
+        "//example/third_party/go/__config:linux_amd64": [":_sys#s_source"],
+        "default": [],
+    }),
+    cover = False,
+    import_path = "github.com/containerd/containerd/sys",
+    visibility = ["PUBLIC"],
+    deps = [
+        "//example/third_party/go/github.com/pkg/errors",
+        "//example/third_party/go/golang.org/x/sys/unix",
+    ] + select({
+        "//example/third_party/go/__config:darwin_amd64": [],
+        "//example/third_party/go/__config:linux_amd64": ["//example/third_party/go/github.com/containerd/containerd/log"],
+        "default": [],
+    }),
+)
