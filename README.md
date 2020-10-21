@@ -25,7 +25,7 @@ version = 15.6.0
 
 [alias "godeps"]
 desc = Generate third-party dependency rules for a Go project
-cmd = run ///pleasegomod//:gogetgen -- -dir third_party/go -clean -genpkg -subinclude "///pleasegomod//:build_defs"
+cmd = run ///pleasegomod//:godeps -- -dir third_party/go -clean -subinclude "///pleasegomod//:build_defs"
 ```
 
 Run the following:
