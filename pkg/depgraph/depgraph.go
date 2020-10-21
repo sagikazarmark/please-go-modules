@@ -290,11 +290,19 @@ func calculatePlatformStringList(pkgs map[Platform]golist.Package, ex func(Platf
 	iset := strset.Intersection(sets...)
 
 	for i, set := range sets {
-		diffSets[setIndex[i]] = strset.Difference(set, iset).List()
+		l := strset.Difference(set, iset).List()
+
+		sort.Strings(l)
+
+		diffSets[setIndex[i]] = l
 	}
 
+	c := iset.List()
+
+	sort.Strings(c)
+
 	return PlatformStringList{
-		Common:      iset.List(),
+		Common:      c,
 		PerPlatform: diffSets,
 	}
 }
@@ -312,11 +320,19 @@ func calculateCgoPlatformStringList(pkgs map[Platform]golist.Package, ex func(Pl
 	iset := strset.Union(sets...)
 
 	for i, set := range sets {
-		diffSets[setIndex[i]] = strset.Difference(set, iset).List()
+		l := strset.Difference(set, iset).List()
+
+		sort.Strings(l)
+
+		diffSets[setIndex[i]] = l
 	}
 
+	c := iset.List()
+
+	sort.Strings(c)
+
 	return PlatformStringList{
-		Common:      iset.List(),
+		Common:      c,
 		PerPlatform: diffSets,
 	}
 }
