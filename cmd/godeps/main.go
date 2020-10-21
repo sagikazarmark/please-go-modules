@@ -429,7 +429,45 @@ func main() {
 					})
 				}
 
-				file.Stmt = append(file.Stmt, rule)
+				// There are no common go files
+				// A rule might only be a dependency of a specific platform
+				// TODO: we only need a select if there are no common go files AND not all platforms require the rule
+				if len(pkg.GoFiles.Common) == 0 {
+					perPlatform := make([]buildify.Expr, 0, len(pkg.CgoFiles.PerPlatform))
+
+					for platform, set := range pkg.GoFiles.PerPlatform {
+						if len(set) > 0 {
+							perPlatform = append(perPlatform, &buildify.DictExpr{
+								List: []*buildify.KeyValueExpr{
+									{
+										Key:   &buildify.StringExpr{Value: "os"},
+										Value: &buildify.StringExpr{Value: platform.OS},
+									},
+									{
+										Key:   &buildify.StringExpr{Value: "cpu"},
+										Value: &buildify.StringExpr{Value: platform.Arch},
+									},
+								},
+							})
+						}
+					}
+
+					ifRule := &buildify.IfStmt{
+						Cond: &buildify.CallExpr{
+							X: &buildify.Ident{Name: "select_config"},
+							List: []buildify.Expr{
+								&buildify.ListExpr{
+									List: perPlatform,
+								},
+							},
+						},
+						True: []buildify.Expr{rule},
+					}
+
+					file.Stmt = append(file.Stmt, ifRule)
+				} else {
+					file.Stmt = append(file.Stmt, rule)
+				}
 			}
 		}
 	}
