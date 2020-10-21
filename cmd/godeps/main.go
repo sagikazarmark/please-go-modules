@@ -258,6 +258,29 @@ func main() {
 					cgocFlagsExpr = &buildify.ListExpr{}
 				}
 
+				cgoSourceName := fmt.Sprintf(":_%s#cgo_source", name)
+				var srcs buildify.Expr = &buildify.ListExpr{
+					List: []buildify.Expr{
+						&buildify.StringExpr{Value: cgoSourceName},
+					},
+				}
+
+				// There are no common cgo files
+				// In case only some of the platforms needs cgo,
+				// we use a select to fall back to go_library in cgo_library
+				// TODO: we only need a select if there are no common cgo files AND not all platforms have cgo files
+				if len(pkg.CgoFiles.Common) == 0 {
+					perPlatform := make(map[depgraph.Platform][]string, len(pkg.CgoFiles.PerPlatform))
+
+					for platform, set := range pkg.CgoFiles.PerPlatform {
+						if len(set) > 0 {
+							perPlatform[platform] = []string{cgoSourceName}
+						}
+					}
+
+					srcs = stringMapListSelect(toPlatformSelectSet(ruleDir, perPlatform))
+				}
+
 				rule := &buildify.CallExpr{
 					X: &buildify.Ident{Name: "cgo_library"},
 					List: []buildify.Expr{
@@ -269,11 +292,7 @@ func main() {
 						&buildify.AssignExpr{
 							LHS: &buildify.Ident{Name: "srcs"},
 							Op:  "=",
-							RHS: &buildify.ListExpr{
-								List: []buildify.Expr{
-									&buildify.StringExpr{Value: fmt.Sprintf(":_%s#cgo_source", name)},
-								},
-							},
+							RHS: srcs,
 						},
 						&buildify.AssignExpr{
 							LHS: &buildify.Ident{Name: "go_srcs"},
