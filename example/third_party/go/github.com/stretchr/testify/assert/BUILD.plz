@@ -5,6 +5,7 @@ fileexport(
     srcs = [
         "assert/assertion_format.go",
         "assert/assertion_forward.go",
+        "assert/assertion_order.go",
         "assert/assertions.go",
         "assert/doc.go",
         "assert/errors.go",
@@ -24,5 +25,6 @@ go_library(
     deps = [
         "//example/third_party/go/github.com/davecgh/go-spew/spew",
         "//example/third_party/go/github.com/pmezard/go-difflib/difflib",
+        "//example/third_party/go/gopkg.in/yaml.v2",
     ],
 )

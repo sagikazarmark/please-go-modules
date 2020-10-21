@@ -199,6 +199,8 @@ func CalculateDepGraph(rootModule string, packageLists []GoPackageList, sums sum
 		for _, platform := range platformsIdx {
 			p, ok := allPackagesIdx[platform][packageToProcess]
 			if !ok {
+				platformVariants[platform] = golist.Package{}
+
 				continue
 			}
 

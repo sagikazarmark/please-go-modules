@@ -1,0 +1,10 @@
+subinclude("//build_defs")
+
+go_module_download(
+    name = "runc",
+    module = "github.com/opencontainers/runc",
+    sum = "h1:GlxAyO6x8rfZYN9Tt0Kti5a/cP41iuiO2yYT0IJGY8Y=",
+    tag = "download",
+    version = "v0.1.1",
+    visibility = ["//example/third_party/go/github.com/opencontainers/runc/..."],
+)

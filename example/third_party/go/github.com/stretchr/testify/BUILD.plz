@@ -3,8 +3,8 @@ subinclude("//build_defs")
 go_module_download(
     name = "testify",
     module = "github.com/stretchr/testify",
-    sum = "h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=",
+    sum = "h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=",
     tag = "download",
-    version = "v1.3.0",
+    version = "v1.4.0",
     visibility = ["//example/third_party/go/github.com/stretchr/testify/..."],
 )

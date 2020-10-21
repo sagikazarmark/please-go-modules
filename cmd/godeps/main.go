@@ -38,7 +38,7 @@ func main() {
 		panic(err)
 	}
 
-	deps := make([]depgraph.GoPackageList, len(SupportedPlatforms))
+	deps := make([]depgraph.GoPackageList, 0, len(SupportedPlatforms))
 
 	for _, platform := range SupportedPlatforms {
 		options := golist.ListOptions{
@@ -258,6 +258,29 @@ func main() {
 					cgocFlagsExpr = &buildify.ListExpr{}
 				}
 
+				cgoSourceName := fmt.Sprintf(":_%s#cgo_source", name)
+				var srcs buildify.Expr = &buildify.ListExpr{
+					List: []buildify.Expr{
+						&buildify.StringExpr{Value: cgoSourceName},
+					},
+				}
+
+				// There are no common cgo files
+				// In case only some of the platforms needs cgo,
+				// we use a select to fall back to go_library in cgo_library
+				// TODO: we only need a select if there are no common cgo files AND not all platforms have cgo files
+				if len(pkg.CgoFiles.Common) == 0 {
+					perPlatform := make(map[depgraph.Platform][]string, len(pkg.CgoFiles.PerPlatform))
+
+					for platform, set := range pkg.CgoFiles.PerPlatform {
+						if len(set) > 0 {
+							perPlatform[platform] = []string{cgoSourceName}
+						}
+					}
+
+					srcs = stringMapListSelect(toPlatformSelectSet(ruleDir, perPlatform))
+				}
+
 				rule := &buildify.CallExpr{
 					X: &buildify.Ident{Name: "cgo_library"},
 					List: []buildify.Expr{
@@ -269,11 +292,7 @@ func main() {
 						&buildify.AssignExpr{
 							LHS: &buildify.Ident{Name: "srcs"},
 							Op:  "=",
-							RHS: &buildify.ListExpr{
-								List: []buildify.Expr{
-									&buildify.StringExpr{Value: fmt.Sprintf(":_%s#cgo_source", name)},
-								},
-							},
+							RHS: srcs,
 						},
 						&buildify.AssignExpr{
 							LHS: &buildify.Ident{Name: "go_srcs"},
@@ -381,18 +400,74 @@ func main() {
 				}
 
 				if isAsm {
+					asmSourceName := fmt.Sprintf(":_%s#s_source", name)
+					var srcs buildify.Expr = &buildify.ListExpr{
+						List: []buildify.Expr{
+							&buildify.StringExpr{Value: asmSourceName},
+						},
+					}
+
+					// There are no common asm files
+					// In case only some of the platforms needs asm
+					// TODO: we only need a select if there are no common asm files AND not all platforms have asm files
+					if len(pkg.SFiles.Common) == 0 {
+						perPlatform := make(map[depgraph.Platform][]string, len(pkg.SFiles.PerPlatform))
+
+						for platform, set := range pkg.SFiles.PerPlatform {
+							if len(set) > 0 {
+								perPlatform[platform] = []string{asmSourceName}
+							}
+						}
+
+						srcs = stringMapListSelect(toPlatformSelectSet(ruleDir, perPlatform))
+					}
+
 					rule.List = append(rule.List, &buildify.AssignExpr{
 						LHS: &buildify.Ident{Name: "asm_srcs"},
 						Op:  "=",
-						RHS: &buildify.ListExpr{
-							List: []buildify.Expr{
-								&buildify.StringExpr{Value: fmt.Sprintf(":_%s#s_source", name)},
-							},
-						},
+						RHS: srcs,
 					})
 				}
 
-				file.Stmt = append(file.Stmt, rule)
+				// There are no common go files
+				// A rule might only be a dependency of a specific platform
+				// TODO: we only need a select if there are no common go files AND not all platforms require the rule
+				if len(pkg.GoFiles.Common) == 0 {
+					perPlatform := make([]buildify.Expr, 0, len(pkg.CgoFiles.PerPlatform))
+
+					for platform, set := range pkg.GoFiles.PerPlatform {
+						if len(set) > 0 {
+							perPlatform = append(perPlatform, &buildify.DictExpr{
+								List: []*buildify.KeyValueExpr{
+									{
+										Key:   &buildify.StringExpr{Value: "os"},
+										Value: &buildify.StringExpr{Value: platform.OS},
+									},
+									{
+										Key:   &buildify.StringExpr{Value: "cpu"},
+										Value: &buildify.StringExpr{Value: platform.Arch},
+									},
+								},
+							})
+						}
+					}
+
+					ifRule := &buildify.IfStmt{
+						Cond: &buildify.CallExpr{
+							X: &buildify.Ident{Name: "select_config"},
+							List: []buildify.Expr{
+								&buildify.ListExpr{
+									List: perPlatform,
+								},
+							},
+						},
+						True: []buildify.Expr{rule},
+					}
+
+					file.Stmt = append(file.Stmt, ifRule)
+				} else {
+					file.Stmt = append(file.Stmt, rule)
+				}
 			}
 		}
 	}
@@ -648,13 +723,15 @@ func platformSourceFileRule(
 	}
 
 	srcs := platformList(commonFileList, platformFileList)
-	if srcs != nil {
-		rule.List = append(rule.List, &buildify.AssignExpr{
-			LHS: &buildify.Ident{Name: "srcs"},
-			Op:  "=",
-			RHS: srcs,
-		})
+	if srcs == nil {
+		srcs = &buildify.ListExpr{}
 	}
+
+	rule.List = append(rule.List, &buildify.AssignExpr{
+		LHS: &buildify.Ident{Name: "srcs"},
+		Op:  "=",
+		RHS: srcs,
+	})
 
 	return rule
 }
