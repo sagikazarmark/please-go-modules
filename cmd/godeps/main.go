@@ -648,13 +648,15 @@ func platformSourceFileRule(
 	}
 
 	srcs := platformList(commonFileList, platformFileList)
-	if srcs != nil {
-		rule.List = append(rule.List, &buildify.AssignExpr{
-			LHS: &buildify.Ident{Name: "srcs"},
-			Op:  "=",
-			RHS: srcs,
-		})
+	if srcs == nil {
+		srcs = &buildify.ListExpr{}
 	}
+
+	rule.List = append(rule.List, &buildify.AssignExpr{
+		LHS: &buildify.Ident{Name: "srcs"},
+		Op:  "=",
+		RHS: srcs,
+	})
 
 	return rule
 }
