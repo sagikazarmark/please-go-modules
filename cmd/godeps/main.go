@@ -400,14 +400,32 @@ func main() {
 				}
 
 				if isAsm {
+					asmSourceName := fmt.Sprintf(":_%s#s_source", name)
+					var srcs buildify.Expr = &buildify.ListExpr{
+						List: []buildify.Expr{
+							&buildify.StringExpr{Value: asmSourceName},
+						},
+					}
+
+					// There are no common asm files
+					// In case only some of the platforms needs asm
+					// TODO: we only need a select if there are no common asm files AND not all platforms have asm files
+					if len(pkg.SFiles.Common) == 0 {
+						perPlatform := make(map[depgraph.Platform][]string, len(pkg.SFiles.PerPlatform))
+
+						for platform, set := range pkg.SFiles.PerPlatform {
+							if len(set) > 0 {
+								perPlatform[platform] = []string{asmSourceName}
+							}
+						}
+
+						srcs = stringMapListSelect(toPlatformSelectSet(ruleDir, perPlatform))
+					}
+
 					rule.List = append(rule.List, &buildify.AssignExpr{
 						LHS: &buildify.Ident{Name: "asm_srcs"},
 						Op:  "=",
-						RHS: &buildify.ListExpr{
-							List: []buildify.Expr{
-								&buildify.StringExpr{Value: fmt.Sprintf(":_%s#s_source", name)},
-							},
-						},
+						RHS: srcs,
 					})
 				}
 
