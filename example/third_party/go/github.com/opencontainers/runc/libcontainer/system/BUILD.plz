@@ -6,7 +6,6 @@ fileexport(
         "//example/third_party/go/__config:darwin_amd64": ["libcontainer/system/unsupported.go"],
         "//example/third_party/go/__config:linux_amd64": [
             "libcontainer/system/linux.go",
-            "libcontainer/system/setns_linux.go",
             "libcontainer/system/syscall_linux_64.go",
             "libcontainer/system/xattrs_linux.go",
         ],
@@ -54,5 +53,9 @@ cgo_library(
     import_path = "github.com/opencontainers/runc/libcontainer/system",
     linker_flags = [],
     visibility = ["PUBLIC"],
-    deps = [],
+    deps = ["//example/third_party/go/github.com/opencontainers/runc/libcontainer/user"] + select({
+        "//example/third_party/go/__config:darwin_amd64": [],
+        "//example/third_party/go/__config:linux_amd64": ["//example/third_party/go/golang.org/x/sys/unix"],
+        "default": [],
+    }),
 )
