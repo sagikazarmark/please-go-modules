@@ -134,6 +134,21 @@ type PlatformStringList struct {
 	PerPlatform map[Platform][]string
 }
 
+// Empty checks whether the list has any items.
+func (l PlatformStringList) Empty() bool {
+	if len(l.Common) > 0 {
+		return false
+	}
+
+	for _, set := range l.PerPlatform {
+		if len(set) > 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
 // CalculateDepGraph calculates the dependency graph of an application.
 func CalculateDepGraph(rootModule string, packageLists []GoPackageList, sums sumfile.Index) []Module {
 	allPackagesIdx := make(map[Platform]map[string]golist.Package)

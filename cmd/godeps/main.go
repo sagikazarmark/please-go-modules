@@ -191,7 +191,7 @@ func main() {
 				packageSource,
 			))
 
-			isAsm := pkg.IsASM()
+			isAsm := !pkg.SFiles.Empty()
 
 			if isAsm {
 				file.Stmt = append(file.Stmt, platformSourceFileRule(
@@ -204,7 +204,7 @@ func main() {
 				))
 			}
 
-			isCgo := pkg.IsCGO()
+			isCgo := !pkg.CgoFiles.Empty()
 
 			if isCgo {
 				generateOsConfig = true
@@ -218,23 +218,27 @@ func main() {
 					packageSource,
 				))
 
-				file.Stmt = append(file.Stmt, platformSourceFileRule(
-					pkg.CFiles.Common,
-					toPlatformSelectSet(ruleDir, pkg.CFiles.PerPlatform),
-					name,
-					"c_source",
-					moduleSource,
-					packageSource,
-				))
+				if !pkg.CFiles.Empty() {
+					file.Stmt = append(file.Stmt, platformSourceFileRule(
+						pkg.CFiles.Common,
+						toPlatformSelectSet(ruleDir, pkg.CFiles.PerPlatform),
+						name,
+						"c_source",
+						moduleSource,
+						packageSource,
+					))
+				}
 
-				file.Stmt = append(file.Stmt, platformSourceFileRule(
-					pkg.HFiles.Common,
-					toPlatformSelectSet(ruleDir, pkg.HFiles.PerPlatform),
-					name,
-					"h_source",
-					moduleSource,
-					packageSource,
-				))
+				if !pkg.HFiles.Empty() {
+					file.Stmt = append(file.Stmt, platformSourceFileRule(
+						pkg.HFiles.Common,
+						toPlatformSelectSet(ruleDir, pkg.HFiles.PerPlatform),
+						name,
+						"h_source",
+						moduleSource,
+						packageSource,
+					))
+				}
 			}
 
 			depExpr := platformDepExpr(ruleDir, pkg.Imports.Common, toPlatformSelectSet(ruleDir, pkg.Imports.PerPlatform))
@@ -304,24 +308,6 @@ func main() {
 							},
 						},
 						&buildify.AssignExpr{
-							LHS: &buildify.Ident{Name: "c_srcs"},
-							Op:  "=",
-							RHS: &buildify.ListExpr{
-								List: []buildify.Expr{
-									&buildify.StringExpr{Value: fmt.Sprintf(":_%s#c_source", name)},
-								},
-							},
-						},
-						&buildify.AssignExpr{
-							LHS: &buildify.Ident{Name: "hdrs"},
-							Op:  "=",
-							RHS: &buildify.ListExpr{
-								List: []buildify.Expr{
-									&buildify.StringExpr{Value: fmt.Sprintf(":_%s#h_source", name)},
-								},
-							},
-						},
-						&buildify.AssignExpr{
 							LHS: &buildify.Ident{Name: "visibility"},
 							Op:  "=",
 							RHS: &buildify.ListExpr{
@@ -351,6 +337,30 @@ func main() {
 							RHS: cgoldflagsExpr,
 						},
 					},
+				}
+
+				if !pkg.CFiles.Empty() {
+					rule.List = append(rule.List, &buildify.AssignExpr{
+						LHS: &buildify.Ident{Name: "c_srcs"},
+						Op:  "=",
+						RHS: &buildify.ListExpr{
+							List: []buildify.Expr{
+								&buildify.StringExpr{Value: fmt.Sprintf(":_%s#c_source", name)},
+							},
+						},
+					})
+				}
+
+				if !pkg.HFiles.Empty() {
+					rule.List = append(rule.List, &buildify.AssignExpr{
+						LHS: &buildify.Ident{Name: "hdrs"},
+						Op:  "=",
+						RHS: &buildify.ListExpr{
+							List: []buildify.Expr{
+								&buildify.StringExpr{Value: fmt.Sprintf(":_%s#h_source", name)},
+							},
+						},
+					})
 				}
 
 				file.Stmt = append(file.Stmt, rule)

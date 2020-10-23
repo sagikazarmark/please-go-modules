@@ -9,7 +9,7 @@ require (
 	github.com/containerd/continuity v0.0.0-20200928162600-f2cc35102c2a // indirect
 	github.com/golang/snappy v0.0.1
 	github.com/mattn/go-sqlite3 v1.14.2
-	github.com/opencontainers/runc v0.1.1
+	github.com/opencontainers/runc v1.0.0-rc10
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f
