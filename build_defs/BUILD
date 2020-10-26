@@ -10,7 +10,6 @@ filegroup(
 filegroup(
     name = "dist",
     srcs = [
-        "config_rules.build_defs",
         "go_module.build_defs",
     ],
     visibility = ["PUBLIC"],
