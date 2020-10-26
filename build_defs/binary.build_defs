@@ -12,17 +12,14 @@ def moddown_binary(name:str, version:str, hashes:list=None, out:str="",
       host (bool): If true the rule will always target the host OS and Arch.
     """
 
-    os = CONFIG.HOSTOS if host else CONFIG.OS
-    arch = CONFIG.HOSTARCH if host else CONFIG.ARCH
-
     return genrule(
         name = name,
         srcs = [remote_file(
             name = name,
             _tag = "download",
-            url = f"https://github.com/sagikazarmark/moddown/releases/download/v{version}/moddown_{os}_{arch}.tar.gz",
+            url = f"https://github.com/sagikazarmark/moddown/releases/download/v{version}/moddown_{CONFIG.OS}_{CONFIG.ARCH}.tar.gz",
             hashes = hashes,
-            out = f"moddown-{version}-{os}-{arch}.tar.gz",
+            out = f"moddown-{version}-{CONFIG.OS}-{CONFIG.ARCH}.tar.gz",
         )],
         outs = [out or "moddown"],
         binary = True,
