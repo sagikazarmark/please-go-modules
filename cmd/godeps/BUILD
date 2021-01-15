@@ -2,6 +2,7 @@ go_binary(
     name = "godeps",
     srcs = [
         "main.go",
+        "generate.go",
         "platform.go",
     ],
     visibility = ["PUBLIC"],
