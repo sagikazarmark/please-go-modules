@@ -3,6 +3,7 @@ go_binary(
     srcs = [
         "main.go",
         "generate.go",
+        "generate_builtin.go",
         "platform.go",
     ],
     visibility = ["PUBLIC"],

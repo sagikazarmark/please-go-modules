@@ -24,6 +24,7 @@ var (
 	clean      = flag.Bool("clean", false, "Clean target before generating new rules")
 	subinclude = flag.String("subinclude", "", "Include a rule in each file. (Useful when you don't want to duplicate the build definitions)")
 	base       = flag.String("base", "", "Prepend this path to the directory")
+	builtin    = flag.Bool("builtin", false, "Use builtin go_module support. For now, builtin dumps all rules in a single file.")
 )
 
 func main() {
@@ -75,7 +76,20 @@ func main() {
 		ruleDir = path.Join(*base, *dir)
 	}
 
-	buildFiles, filePaths, generateOsConfig := generateBuildFiles(moduleList, ruleDir)
+	var buildFiles map[string]*buildify.File
+	var filePaths []string
+	var generateOsConfig bool
+
+	if *builtin {
+		file, goc := generateBuiltinBuildFiles(moduleList, ruleDir)
+		buildFiles = map[string]*buildify.File{
+			"": file,
+		}
+		filePaths = []string{""}
+		generateOsConfig = goc
+	} else {
+		buildFiles, filePaths, generateOsConfig = generateBuildFiles(moduleList, ruleDir)
+	}
 
 	if generateOsConfig {
 		filePath := "__config"
