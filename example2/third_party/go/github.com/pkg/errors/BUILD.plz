@@ -1,9 +1,0 @@
-go_module(
-    name = "errors",
-    install = [""],
-    module = "github.com/pkg/errors",
-    version = "v0.9.1",
-    visibility = ["PUBLIC"],
-    deps = [],
-    please_go_install = True,
-)
