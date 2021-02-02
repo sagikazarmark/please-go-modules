@@ -1,3 +1,19 @@
+config_setting(
+    name = "__config_linux_amd64",
+    values = {
+        "os": "linux",
+        "cpu": "amd64",
+    },
+)
+
+config_setting(
+    name = "__config_darwin_amd64",
+    values = {
+        "os": "darwin",
+        "cpu": "amd64",
+    },
+)
+
 go_mod_download(
     name = "emperror.dev_errors",
     _tag = "download",
@@ -40,8 +56,8 @@ go_module(
     module = "github.com/containerd/containerd",
     visibility = ["PUBLIC"],
     deps = select({
-        "//example2/third_party/go/__config:darwin_amd64": [],
-        "//example2/third_party/go/__config:linux_amd64": [":github.com_sirupsen_logrus"],
+        ":__config_darwin_amd64": [],
+        ":__config_linux_amd64": [":github.com_sirupsen_logrus"],
         "default": [],
     }),
 )
@@ -56,8 +72,8 @@ go_module(
         ":github.com_pkg_errors",
         ":golang.org_x_sys_unix",
     ] + select({
-        "//example2/third_party/go/__config:darwin_amd64": [],
-        "//example2/third_party/go/__config:linux_amd64": [":github.com_containerd_containerd_log"],
+        ":__config_darwin_amd64": [],
+        ":__config_linux_amd64": [":github.com_containerd_containerd_log"],
         "default": [],
     }),
 )
@@ -181,8 +197,8 @@ go_module(
     module = "github.com/opencontainers/runc",
     visibility = ["PUBLIC"],
     deps = [":github.com_opencontainers_runc_libcontainer_user"] + select({
-        "//example2/third_party/go/__config:darwin_amd64": [],
-        "//example2/third_party/go/__config:linux_amd64": [":golang.org_x_sys_unix"],
+        ":__config_darwin_amd64": [],
+        ":__config_linux_amd64": [":golang.org_x_sys_unix"],
         "default": [],
     }),
 )
@@ -242,8 +258,8 @@ go_module(
     module = "github.com/sirupsen/logrus",
     visibility = ["PUBLIC"],
     deps = select({
-        "//example2/third_party/go/__config:darwin_amd64": [],
-        "//example2/third_party/go/__config:linux_amd64": [":golang.org_x_sys_unix"],
+        ":__config_darwin_amd64": [],
+        ":__config_linux_amd64": [":golang.org_x_sys_unix"],
         "default": [],
     }),
 )
@@ -725,8 +741,8 @@ go_module(
         ":google.golang.org_grpc_credentials",
         ":google.golang.org_grpc_grpclog",
     ] + select({
-        "//example2/third_party/go/__config:darwin_amd64": [],
-        "//example2/third_party/go/__config:linux_amd64": [":golang.org_x_sys_unix"],
+        ":__config_darwin_amd64": [],
+        ":__config_linux_amd64": [":golang.org_x_sys_unix"],
         "default": [],
     }),
 )
@@ -847,8 +863,8 @@ go_module(
     module = "google.golang.org/grpc",
     visibility = ["PUBLIC"],
     deps = [":google.golang.org_grpc_grpclog"] + select({
-        "//example2/third_party/go/__config:darwin_amd64": [],
-        "//example2/third_party/go/__config:linux_amd64": [":golang.org_x_sys_unix"],
+        ":__config_darwin_amd64": [],
+        ":__config_linux_amd64": [":golang.org_x_sys_unix"],
         "default": [],
     }),
 )

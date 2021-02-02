@@ -78,85 +78,56 @@ func main() {
 
 	var buildFiles map[string]*buildify.File
 	var filePaths []string
-	var generateOsConfig bool
 
 	if *builtin {
-		file, goc := generateBuiltinBuildFiles(moduleList, ruleDir)
+		file, generateOsConfig := generateBuiltinBuildFiles(moduleList)
+
+		if generateOsConfig {
+			file.Stmt = append(generateOsConfigExprs(""), file.Stmt...)
+		}
+
 		buildFiles = map[string]*buildify.File{
 			"": file,
 		}
 		filePaths = []string{""}
-		generateOsConfig = goc
 	} else {
+		var generateOsConfig bool
+
 		buildFiles, filePaths, generateOsConfig = generateBuildFiles(moduleList, ruleDir)
-	}
 
-	if generateOsConfig {
-		filePath := "__config"
+		if generateOsConfig {
+			filePath := "__config"
 
-		// Get (and create) file
-		file, ok := buildFiles[filePath]
-		if !ok {
-			file = &buildify.File{
-				Path: filePath,
-				Type: buildify.TypeBuild,
-			}
+			// Get (and create) file
+			file, ok := buildFiles[filePath]
+			if !ok {
+				file = &buildify.File{
+					Path: filePath,
+					Type: buildify.TypeBuild,
+				}
 
-			if ruleDir != "" {
-				file.Stmt = append(file.Stmt, &buildify.CallExpr{
-					X: &buildify.Ident{Name: "package"},
-					List: []buildify.Expr{
-						&buildify.AssignExpr{
-							LHS: &buildify.Ident{Name: "default_visibility"},
-							Op:  "=",
-							RHS: &buildify.ListExpr{
-								List: []buildify.Expr{
-									&buildify.StringExpr{Value: "PUBLIC"},
+				if ruleDir != "" {
+					file.Stmt = append(file.Stmt, &buildify.CallExpr{
+						X: &buildify.Ident{Name: "package"},
+						List: []buildify.Expr{
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "default_visibility"},
+								Op:  "=",
+								RHS: &buildify.ListExpr{
+									List: []buildify.Expr{
+										&buildify.StringExpr{Value: "PUBLIC"},
+									},
 								},
 							},
 						},
-					},
-				})
+					})
+				}
+
+				filePaths = append(filePaths, filePath)
+				buildFiles[filePath] = file
 			}
 
-			filePaths = append(filePaths, filePath)
-			buildFiles[filePath] = file
-		}
-
-		for _, platform := range SupportedPlatforms {
-			ruleName := platform.String()
-			if ruleDir == "" {
-				ruleName = "__config_" + ruleName
-			}
-
-			rule := &buildify.CallExpr{
-				X: &buildify.Ident{Name: "config_setting"},
-				List: []buildify.Expr{
-					&buildify.AssignExpr{
-						LHS: &buildify.Ident{Name: "name"},
-						Op:  "=",
-						RHS: &buildify.StringExpr{Value: ruleName},
-					},
-					&buildify.AssignExpr{
-						LHS: &buildify.Ident{Name: "values"},
-						Op:  "=",
-						RHS: &buildify.DictExpr{
-							List: []*buildify.KeyValueExpr{
-								{
-									Key:   &buildify.StringExpr{Value: "os"},
-									Value: &buildify.StringExpr{Value: platform.OS},
-								},
-								{
-									Key:   &buildify.StringExpr{Value: "cpu"},
-									Value: &buildify.StringExpr{Value: platform.Arch},
-								},
-							},
-						},
-					},
-				},
-			}
-
-			file.Stmt = append(file.Stmt, rule)
+			file.Stmt = append(file.Stmt, generateOsConfigExprs(ruleDir)...)
 		}
 	}
 

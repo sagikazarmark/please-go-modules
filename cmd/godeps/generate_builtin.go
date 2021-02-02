@@ -8,7 +8,7 @@ import (
 	"github.com/sagikazarmark/please-go-modules/pkg/depgraph"
 )
 
-func generateBuiltinBuildFiles(moduleList []depgraph.Module, ruleDir string) (*buildify.File, bool) {
+func generateBuiltinBuildFiles(moduleList []depgraph.Module) (*buildify.File, bool) {
 	file := newFile("", subinclude)
 	var generateOsConfig bool
 
@@ -53,7 +53,7 @@ func generateBuiltinBuildFiles(moduleList []depgraph.Module, ruleDir string) (*b
 			name := sanitizeName(pkg.ImportPath)
 			downloadRule := ":_" + sanitizeName(module.Path) + "#download"
 
-			depExpr := platformDepExpr("", pkg.Imports.Common, toPlatformSelectSet(ruleDir, pkg.Imports.PerPlatform))
+			depExpr := platformDepExpr("", pkg.Imports.Common, toPlatformSelectSet("", pkg.Imports.PerPlatform))
 			if depExpr == nil {
 				depExpr = &buildify.ListExpr{}
 			}

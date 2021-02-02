@@ -4,6 +4,7 @@ go_binary(
         "main.go",
         "generate.go",
         "generate_builtin.go",
+        "os_config.go",
         "platform.go",
     ],
     visibility = ["PUBLIC"],
