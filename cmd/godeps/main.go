@@ -350,7 +350,7 @@ func platformDepExpr(ruleDir string, common []string, platform map[string][]stri
 
 func formatDepPath(ruleDir string, depPath string) string {
 	if ruleDir == "" {
-		return ":" + strings.Replace(depPath, "/", "_", -1)
+		return ":" + strings.Replace(depPath, "/", "__", -1)
 	}
 
 	return fmt.Sprintf("//%s", path.Join(ruleDir, depPath))

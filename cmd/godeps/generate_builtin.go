@@ -121,5 +121,5 @@ func generateBuiltinBuildFiles(moduleList []depgraph.Module) (*buildify.File, bo
 }
 
 func sanitizeName(name string) string {
-	return strings.NewReplacer("/", "_").Replace(name)
+	return strings.NewReplacer("/", "__").Replace(name)
 }

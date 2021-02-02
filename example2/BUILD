@@ -2,13 +2,13 @@ go_binary(
     name = "example",
     srcs = ["main.go"],
     deps = [
-        "//example2/third_party/go:emperror.dev_errors_match",
-        "//example2/third_party/go:github.com_containerd_containerd_sys",
-        "//example2/third_party/go:github.com_golang_snappy",
-        "//example2/third_party/go:github.com_mattn_go-sqlite3",
-        "//example2/third_party/go:github.com_opencontainers_runc_libcontainer_system",
-        "//example2/third_party/go:golang.org_x_sys_unix",
-        "//example2/third_party/go:google.golang.org_grpc",
+        "//example2/third_party/go:emperror.dev__errors__match",
+        "//example2/third_party/go:github.com__containerd__containerd__sys",
+        "//example2/third_party/go:github.com__golang__snappy",
+        "//example2/third_party/go:github.com__mattn__go-sqlite3",
+        "//example2/third_party/go:github.com__opencontainers__runc__libcontainer__system",
+        "//example2/third_party/go:golang.org__x__sys__unix",
+        "//example2/third_party/go:google.golang.org__grpc",
     ],
 )
 
