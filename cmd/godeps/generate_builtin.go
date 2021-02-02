@@ -113,7 +113,39 @@ func generateBuiltinBuildFiles(moduleList []depgraph.Module) (*buildify.File, bo
 				},
 			}
 
-			file.Stmt = append(file.Stmt, rule)
+			var stmt buildify.Expr = rule
+
+			if !pkg.AllPlatforms() {
+				var os, arch []string
+				for _, p := range pkg.Platforms {
+					os = append(os, p.OS)
+					arch = append(arch, p.Arch)
+				}
+
+				os = uniqueStrings(os)
+				arch = uniqueStrings(arch)
+
+				stmt = &buildify.IfStmt{
+					Cond: &buildify.CallExpr{
+						X: &buildify.Ident{Name: "is_platform"},
+						List: []buildify.Expr{
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "os"},
+								Op:  "=",
+								RHS: stringListExpr(os),
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "arch"},
+								Op:  "=",
+								RHS: stringListExpr(arch),
+							},
+						},
+					},
+					True: []buildify.Expr{rule},
+				}
+			}
+
+			file.Stmt = append(file.Stmt, stmt)
 		}
 	}
 
@@ -122,4 +154,20 @@ func generateBuiltinBuildFiles(moduleList []depgraph.Module) (*buildify.File, bo
 
 func sanitizeName(name string) string {
 	return strings.NewReplacer("/", "__").Replace(name)
+}
+
+func uniqueStrings(s []string) []string {
+	tmp := make(map[string]bool)
+
+	for _, v := range s {
+		tmp[v] = true
+	}
+
+	ns := make([]string, 0, len(tmp))
+
+	for k := range tmp {
+		ns = append(ns, k)
+	}
+
+	return ns
 }

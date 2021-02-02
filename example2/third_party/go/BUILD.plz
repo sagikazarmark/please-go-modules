@@ -49,18 +49,11 @@ go_mod_download(
     version = "v1.4.1",
 )
 
-go_module(
-    name = "github.com__containerd__containerd__log",
-    download = ":_github.com__containerd__containerd#download",
-    install = ["log"],
-    module = "github.com/containerd/containerd",
-    visibility = ["PUBLIC"],
-    deps = select({
-        ":__config_darwin_amd64": [],
-        ":__config_linux_amd64": [":github.com__sirupsen__logrus"],
-        "default": [],
-    }),
-)
+if is_platform(
+    arch = ["amd64"],
+    os = ["linux"],
+):
+    go_module(name = "github.com__containerd__containerd__log", download = ":_github.com__containerd__containerd#download", install = ["log"], module = "github.com/containerd/containerd", visibility = ["PUBLIC"], deps = select({":__config_darwin_amd64": [], ":__config_linux_amd64": [":github.com__sirupsen__logrus"], "default": []}))
 
 go_module(
     name = "github.com__containerd__containerd__sys",
@@ -251,18 +244,11 @@ go_mod_download(
     version = "v1.7.0",
 )
 
-go_module(
-    name = "github.com__sirupsen__logrus",
-    download = ":_github.com__sirupsen__logrus#download",
-    install = ["."],
-    module = "github.com/sirupsen/logrus",
-    visibility = ["PUBLIC"],
-    deps = select({
-        ":__config_darwin_amd64": [],
-        ":__config_linux_amd64": [":golang.org__x__sys__unix"],
-        "default": [],
-    }),
-)
+if is_platform(
+    arch = ["amd64"],
+    os = ["linux"],
+):
+    go_module(name = "github.com__sirupsen__logrus", download = ":_github.com__sirupsen__logrus#download", install = ["."], module = "github.com/sirupsen/logrus", visibility = ["PUBLIC"], deps = select({":__config_darwin_amd64": [], ":__config_linux_amd64": [":golang.org__x__sys__unix"], "default": []}))
 
 go_mod_download(
     name = "github.com__stretchr__testify",
