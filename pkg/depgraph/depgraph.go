@@ -94,6 +94,10 @@ type Package2 struct {
 
 	// Dependency information
 	Imports PlatformStringList // import paths used by this package
+
+	// Platform information
+	Platforms    []Platform
+	allPlatforms bool
 }
 
 // IsASM determines whether the package contains any assembly code.
@@ -124,6 +128,11 @@ func (p Package2) IsCGO() bool {
 	}
 
 	return false
+}
+
+// AllPlatforms determines whether the package should be compiled on all platforms.
+func (p Package2) AllPlatforms() bool {
+	return p.allPlatforms
 }
 
 // PlatformStringList is a list of strings (ie. files, compiler flags, etc) for all supported platforms,
@@ -211,15 +220,21 @@ func CalculateDepGraph(rootModule string, packageLists []GoPackageList, sums sum
 	for _, packageToProcess := range packagesToProcess {
 		platformVariants := make(map[Platform]golist.Package)
 
+		allPlatforms := true
+		var pkgPlatforms []Platform
+
 		for _, platform := range platformsIdx {
 			p, ok := allPackagesIdx[platform][packageToProcess]
 			if !ok {
 				platformVariants[platform] = golist.Package{}
 
+				allPlatforms = false
+
 				continue
 			}
 
 			platformVariants[platform] = p
+			pkgPlatforms = append(pkgPlatforms, platform)
 		}
 
 		pkg := Package2{
@@ -255,6 +270,9 @@ func CalculateDepGraph(rootModule string, packageLists []GoPackageList, sums sum
 
 				return imports
 			}),
+
+			Platforms:    pkgPlatforms,
+			allPlatforms: allPlatforms,
 		}
 
 		module := modules[pkgToModule[packageToProcess]]

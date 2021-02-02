@@ -1,5 +1,5 @@
 [please]
-version = 15.7.1
+version = 15.14.0-beta.2
 
 [parse]
 preloadbuilddefs = build_defs/binary.build_defs
@@ -15,3 +15,6 @@ moddown-version = 0.3.1
 [alias "godeps"]
 desc = Generate third-party dependency rules for a Go project
 cmd = run //cmd/godeps -- -dir third_party/go -clean -subinclude "//build_defs"
+
+[featureflags]
+PleaseGoInstall = true
