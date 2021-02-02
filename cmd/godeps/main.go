@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -25,6 +26,7 @@ var (
 	subinclude = flag.String("subinclude", "", "Include a rule in each file. (Useful when you don't want to duplicate the build definitions)")
 	base       = flag.String("base", "", "Prepend this path to the directory")
 	builtin    = flag.Bool("builtin", false, "Use builtin go_module support. For now, builtin dumps all rules in a single file.")
+	wollemi    = flag.Bool("wollemi", false, "Generate wollemi config with known dependencies.")
 )
 
 func main() {
@@ -78,9 +80,10 @@ func main() {
 
 	var buildFiles map[string]*buildify.File
 	var filePaths []string
+	var knownDependencies map[string]string
 
 	if *builtin {
-		file, generateOsConfig := generateBuiltinBuildFiles(moduleList)
+		file, generateOsConfig, knownDeps := generateBuiltinBuildFiles(moduleList, ruleDir)
 
 		if generateOsConfig {
 			file.Stmt = append(generateOsConfigExprs(""), file.Stmt...)
@@ -90,6 +93,7 @@ func main() {
 			"": file,
 		}
 		filePaths = []string{""}
+		knownDependencies = knownDeps
 	} else {
 		var generateOsConfig bool
 
@@ -188,6 +192,27 @@ func main() {
 				if err != nil {
 					panic(err)
 				}
+
+				file.Close()
+			}
+		}
+
+		if *wollemi && len(knownDependencies) > 0 {
+			wollemiConfig := map[string]interface{}{
+				"known_dependency": knownDependencies,
+			}
+
+			file, err := os.OpenFile(".wollemi.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+			if err != nil {
+				panic(err)
+			}
+
+			encoder := json.NewEncoder(file)
+			encoder.SetIndent("", "    ")
+			
+			err = encoder.Encode(wollemiConfig)
+			if err != nil {
+				panic(err)
 			}
 		}
 	} else {

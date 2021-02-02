@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	buildify "github.com/bazelbuild/buildtools/build"
@@ -8,9 +9,10 @@ import (
 	"github.com/sagikazarmark/please-go-modules/pkg/depgraph"
 )
 
-func generateBuiltinBuildFiles(moduleList []depgraph.Module) (*buildify.File, bool) {
+func generateBuiltinBuildFiles(moduleList []depgraph.Module, ruleDir string) (*buildify.File, bool, map[string]string) {
 	file := newFile("", subinclude)
 	var generateOsConfig bool
+	knownDeps := make(map[string]string)
 
 	for _, module := range moduleList {
 		name := sanitizeName(module.Path)
@@ -146,10 +148,16 @@ func generateBuiltinBuildFiles(moduleList []depgraph.Module) (*buildify.File, bo
 			}
 
 			file.Stmt = append(file.Stmt, stmt)
+
+			if ruleDir != "" {
+				knownDeps[pkg.ImportPath] = fmt.Sprintf("//%s:%s", ruleDir, name)
+			} else {
+				knownDeps[pkg.ImportPath] = fmt.Sprintf("//%s", name)
+			}
 		}
 	}
 
-	return file, generateOsConfig
+	return file, generateOsConfig, knownDeps
 }
 
 func sanitizeName(name string) string {

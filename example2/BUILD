@@ -15,7 +15,5 @@ go_binary(
 go_test(
     name = "example_test",
     srcs = ["main_test.go"],
-    deps = [
-        "//example2/third_party/go/github.com/stretchr/testify/assert",
-    ],
+    deps = ["//example2/third_party/go:github.com__stretchr__testify__assert"],
 )
