@@ -14,6 +14,7 @@ go_module(
         ":github.com_pkg_errors",
         ":go.uber.org_multierr",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -22,6 +23,7 @@ go_module(
     install = ["match"],
     module = "emperror.dev/errors",
     deps = [":emperror.dev_errors"],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -36,11 +38,8 @@ go_module(
     download = ":_github.com_containerd_containerd#download",
     install = ["log"],
     module = "github.com/containerd/containerd",
-    deps = select({
-        "//example2/third_party/go/__config:darwin_amd64": [],
-        "//example2/third_party/go/__config:linux_amd64": [":github.com_sirupsen_logrus"],
-        "default": [],
-    }),
+    deps = [":github.com_sirupsen_logrus"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -56,6 +55,7 @@ go_module(
         "//example2/third_party/go/__config:linux_amd64": [":github.com_containerd_containerd_log"],
         "default": [],
     }),
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -71,6 +71,7 @@ go_module(
     install = ["spew"],
     module = "github.com/davecgh/go-spew",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -86,6 +87,7 @@ go_module(
     install = ["proto"],
     module = "github.com/golang/protobuf",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -107,6 +109,7 @@ go_module(
     install = ["ptypes/any"],
     module = "github.com/golang/protobuf",
     deps = [":github.com_golang_protobuf_proto"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -115,6 +118,7 @@ go_module(
     install = ["ptypes/duration"],
     module = "github.com/golang/protobuf",
     deps = [":github.com_golang_protobuf_proto"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -123,6 +127,7 @@ go_module(
     install = ["ptypes/timestamp"],
     module = "github.com/golang/protobuf",
     deps = [":github.com_golang_protobuf_proto"],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -138,6 +143,7 @@ go_module(
     install = ["."],
     module = "github.com/golang/snappy",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -153,6 +159,7 @@ go_module(
     install = ["."],
     module = "github.com/mattn/go-sqlite3",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -172,6 +179,7 @@ go_module(
         "//example2/third_party/go/__config:linux_amd64": [":golang.org_x_sys_unix"],
         "default": [],
     }),
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -180,6 +188,7 @@ go_module(
     install = ["libcontainer/user"],
     module = "github.com/opencontainers/runc",
     deps = [":golang.org_x_sys_unix"],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -195,6 +204,7 @@ go_module(
     install = ["."],
     module = "github.com/pkg/errors",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -210,6 +220,7 @@ go_module(
     install = ["difflib"],
     module = "github.com/pmezard/go-difflib",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -224,11 +235,8 @@ go_module(
     download = ":_github.com_sirupsen_logrus#download",
     install = ["."],
     module = "github.com/sirupsen/logrus",
-    deps = select({
-        "//example2/third_party/go/__config:darwin_amd64": [],
-        "//example2/third_party/go/__config:linux_amd64": [":golang.org_x_sys_unix"],
-        "default": [],
-    }),
+    deps = [":golang.org_x_sys_unix"],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -248,6 +256,7 @@ go_module(
         ":github.com_pmezard_go-difflib_difflib",
         ":gopkg.in_yaml.v2",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -263,6 +272,7 @@ go_module(
     install = ["."],
     module = "go.uber.org/atomic",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -278,6 +288,7 @@ go_module(
     install = ["."],
     module = "go.uber.org/multierr",
     deps = [":go.uber.org_atomic"],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -293,6 +304,7 @@ go_module(
     install = ["http/httpguts"],
     module = "golang.org/x/net",
     deps = [":golang.org_x_net_idna"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -305,6 +317,7 @@ go_module(
         ":golang.org_x_net_http_httpguts",
         ":golang.org_x_net_idna",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -313,6 +326,7 @@ go_module(
     install = ["http2/hpack"],
     module = "golang.org/x/net",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -325,6 +339,7 @@ go_module(
         ":golang.org_x_text_unicode_bidi",
         ":golang.org_x_text_unicode_norm",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -333,6 +348,7 @@ go_module(
     install = ["internal/timeseries"],
     module = "golang.org/x/net",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -341,6 +357,7 @@ go_module(
     install = ["trace"],
     module = "golang.org/x/net",
     deps = [":golang.org_x_net_internal_timeseries"],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -356,6 +373,7 @@ go_module(
     install = ["internal/unsafeheader"],
     module = "golang.org/x/sys",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -364,6 +382,7 @@ go_module(
     install = ["unix"],
     module = "golang.org/x/sys",
     deps = [":golang.org_x_sys_internal_unsafeheader"],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -382,6 +401,7 @@ go_module(
         ":golang.org_x_text_transform",
         ":golang.org_x_text_unicode_bidi",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -390,6 +410,7 @@ go_module(
     install = ["transform"],
     module = "golang.org/x/text",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -398,6 +419,7 @@ go_module(
     install = ["unicode/bidi"],
     module = "golang.org/x/text",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -406,6 +428,7 @@ go_module(
     install = ["unicode/norm"],
     module = "golang.org/x/text",
     deps = [":golang.org_x_text_transform"],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -424,6 +447,7 @@ go_module(
         ":github.com_golang_protobuf_proto",
         ":github.com_golang_protobuf_ptypes_any",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -473,6 +497,7 @@ go_module(
         ":google.golang.org_grpc_status",
         ":google.golang.org_grpc_tap",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -481,6 +506,7 @@ go_module(
     install = ["attributes"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -489,6 +515,7 @@ go_module(
     install = ["backoff"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -504,6 +531,7 @@ go_module(
         ":google.golang.org_grpc_resolver",
         ":google.golang.org_grpc_serviceconfig",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -517,6 +545,7 @@ go_module(
         ":google.golang.org_grpc_grpclog",
         ":google.golang.org_grpc_resolver",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -525,6 +554,7 @@ go_module(
     install = ["balancer/grpclb/state"],
     module = "google.golang.org/grpc",
     deps = [":google.golang.org_grpc_resolver"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -538,6 +568,7 @@ go_module(
         ":google.golang.org_grpc_grpclog",
         ":google.golang.org_grpc_internal_grpcrand",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -550,6 +581,7 @@ go_module(
         ":github.com_golang_protobuf_ptypes_duration",
         ":github.com_golang_protobuf_ptypes_timestamp",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -558,6 +590,7 @@ go_module(
     install = ["codes"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -566,6 +599,7 @@ go_module(
     install = ["connectivity"],
     module = "google.golang.org/grpc",
     deps = [":google.golang.org_grpc_grpclog"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -579,6 +613,7 @@ go_module(
         ":google.golang.org_grpc_internal",
         ":google.golang.org_grpc_internal_credentials",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -587,6 +622,7 @@ go_module(
     install = ["encoding"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -598,6 +634,7 @@ go_module(
         ":github.com_golang_protobuf_proto",
         ":google.golang.org_grpc_encoding",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -606,6 +643,7 @@ go_module(
     install = ["grpclog"],
     module = "google.golang.org/grpc",
     deps = [":google.golang.org_grpc_internal_grpclog"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -628,6 +666,7 @@ go_module(
         ":google.golang.org_grpc_backoff",
         ":google.golang.org_grpc_internal_grpcrand",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -636,6 +675,7 @@ go_module(
     install = ["internal/balancerload"],
     module = "google.golang.org/grpc",
     deps = [":google.golang.org_grpc_metadata"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -652,6 +692,7 @@ go_module(
         ":google.golang.org_grpc_metadata",
         ":google.golang.org_grpc_status",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -660,6 +701,7 @@ go_module(
     install = ["internal/buffer"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -676,6 +718,7 @@ go_module(
         "//example2/third_party/go/__config:linux_amd64": [":golang.org_x_sys_unix"],
         "default": [],
     }),
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -684,6 +727,7 @@ go_module(
     install = ["internal/credentials"],
     module = "google.golang.org/grpc",
     deps = [":google.golang.org_grpc_grpclog"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -692,6 +736,7 @@ go_module(
     install = ["internal/envconfig"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -700,6 +745,7 @@ go_module(
     install = ["internal/grpclog"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -708,6 +754,7 @@ go_module(
     install = ["internal/grpcrand"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -716,6 +763,7 @@ go_module(
     install = ["internal/grpcsync"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -727,6 +775,7 @@ go_module(
         ":google.golang.org_grpc_metadata",
         ":google.golang.org_grpc_resolver",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -742,6 +791,7 @@ go_module(
         ":google.golang.org_grpc_resolver",
         ":google.golang.org_grpc_serviceconfig",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -750,6 +800,7 @@ go_module(
     install = ["internal/resolver/passthrough"],
     module = "google.golang.org/grpc",
     deps = [":google.golang.org_grpc_resolver"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -762,6 +813,7 @@ go_module(
         ":google.golang.org_grpc_grpclog",
         ":google.golang.org_grpc_serviceconfig",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -775,6 +827,7 @@ go_module(
         ":google.golang.org_genproto_googleapis_rpc_status",
         ":google.golang.org_grpc_codes",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -787,6 +840,7 @@ go_module(
         "//example2/third_party/go/__config:linux_amd64": [":golang.org_x_sys_unix"],
         "default": [],
     }),
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -815,6 +869,7 @@ go_module(
         ":google.golang.org_grpc_status",
         ":google.golang.org_grpc_tap",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -823,6 +878,7 @@ go_module(
     install = ["keepalive"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -831,6 +887,7 @@ go_module(
     install = ["metadata"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -839,6 +896,7 @@ go_module(
     install = ["peer"],
     module = "google.golang.org/grpc",
     deps = [":google.golang.org_grpc_credentials"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -851,6 +909,7 @@ go_module(
         ":google.golang.org_grpc_credentials",
         ":google.golang.org_grpc_serviceconfig",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -859,6 +918,7 @@ go_module(
     install = ["serviceconfig"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -867,6 +927,7 @@ go_module(
     install = ["stats"],
     module = "google.golang.org/grpc",
     deps = [":google.golang.org_grpc_metadata"],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -879,6 +940,7 @@ go_module(
         ":google.golang.org_grpc_codes",
         ":google.golang.org_grpc_internal_status",
     ],
+    visibility = ["PUBLIC"],
 )
 
 go_module(
@@ -887,6 +949,7 @@ go_module(
     install = ["tap"],
     module = "google.golang.org/grpc",
     deps = [],
+    visibility = ["PUBLIC"],
 )
 
 go_mod_download(
@@ -902,4 +965,5 @@ go_module(
     install = ["."],
     module = "gopkg.in/yaml.v2",
     deps = [],
+    visibility = ["PUBLIC"],
 )
