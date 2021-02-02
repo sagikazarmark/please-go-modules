@@ -101,6 +101,15 @@ func generateBuiltinBuildFiles(moduleList []depgraph.Module, ruleDir string) (*b
 						Op:  "=",
 						RHS: depExpr,
 					},
+					&buildify.AssignExpr{
+						LHS: &buildify.Ident{Name: "visibility"},
+						Op:  "=",
+						RHS: &buildify.ListExpr{
+							List: []buildify.Expr{
+								&buildify.StringExpr{Value: "PUBLIC"},
+							},
+						},
+					},
 				},
 			}
 
