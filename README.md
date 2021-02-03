@@ -13,7 +13,7 @@ Add the following snippet to your `BUILD` file in the root of your repository:
 ```starlark
 http_archive(
     name = "pleasegomod",
-    urls = [f"https://github.com/sagikazarmark/please-go-modules/releases/download/v0.0.11/godeps_{CONFIG.HOSTOS}_{CONFIG.HOSTARCH}.tar.gz"],
+    urls = [f"https://github.com/sagikazarmark/please-go-modules/releases/download/v0.0.16/godeps_{CONFIG.HOSTOS}_{CONFIG.HOSTARCH}.tar.gz"],
 )
 ```
 
@@ -21,7 +21,7 @@ Add the following snippet to your `.plzconfig` (or to a `.plzconfig.experimental
 
 ```
 [please]
-version = 15.7.1
+version = 15.14.0
 
 [alias "godeps"]
 desc = Generate third-party dependency rules for a Go project
