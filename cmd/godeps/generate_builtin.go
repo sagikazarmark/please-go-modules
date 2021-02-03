@@ -118,6 +118,8 @@ func generateBuiltinBuildFiles(moduleList []depgraph.Module, ruleDir string) (*b
 			var stmt buildify.Expr = rule
 
 			if !pkg.AllPlatforms() {
+				generateOsConfig = true
+				
 				var os, arch []string
 				for _, p := range pkg.Platforms {
 					os = append(os, p.OS)
