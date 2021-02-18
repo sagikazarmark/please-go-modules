@@ -15,7 +15,10 @@ go_library(
 go_test(
     name = "test",
     srcs = glob(["*.go"]),
-    data = ["//pkg/depgraph/testdata", "//pkg/depgraph/testdata/packages"],
+    data = [
+        "//pkg/depgraph/testdata",
+        "//pkg/depgraph/testdata/packages",
+    ],
     deps = [
         "//pkg/golist",
         "//pkg/sumfile",

@@ -16,7 +16,7 @@ sh_cmd(
         "$(out_exe :wollemi-wrapper) gofmt ./...",
     ],
     deps = [
-        "//cmd/godeps",
         ":wollemi-wrapper",
+        "//cmd/godeps",
     ],
 )
