@@ -29,7 +29,7 @@ jobs:
         uses: sagikazarmark/setup-please-action@v0
 
       - name: Test
-        run: plz test ./...
+        run: plz test //...
 
   artifacts:
     name: Artifacts

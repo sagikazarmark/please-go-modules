@@ -6,7 +6,7 @@ go_binary(
         "vcs.go",
     ],
     visibility = ["PUBLIC"],
-    deps = ["//third_party/go/golang.org/x/tools/go/vcs"],
+    deps = ["//third_party/go:golang.org__x__tools__go__vcs"],
 )
 
 go_test(
@@ -17,7 +17,7 @@ go_test(
         "module.go",
         "vcs.go",
     ],
-    deps = ["//third_party/go/golang.org/x/tools/go/vcs"],
+    deps = ["//third_party/go:golang.org__x__tools__go__vcs"],
 )
 
 go_get(

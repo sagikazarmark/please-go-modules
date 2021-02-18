@@ -27,6 +27,7 @@ var (
 	base       = flag.String("base", "", "Prepend this path to the directory")
 	builtin    = flag.Bool("builtin", false, "Use builtin go_module support. For now, builtin dumps all rules in a single file.")
 	wollemi    = flag.Bool("wollemi", false, "Generate wollemi config with known dependencies.")
+	arm        = flag.Bool("arm", false, "Add ARM to the supported architectures.")
 )
 
 func main() {
@@ -34,6 +35,14 @@ func main() {
 
 	if *stdout && *dir != "" {
 		panic("stdout and dir are mutually exclusive")
+	}
+
+	if *arm {
+		SupportedPlatforms = append(
+			SupportedPlatforms,
+			Platform{"linux", "arm64"},
+			Platform{"darwin", "arm64"},
+		)
 	}
 
 	rootModule, err := golist.CurrentModule()
@@ -209,7 +218,7 @@ func main() {
 
 			encoder := json.NewEncoder(file)
 			encoder.SetIndent("", "    ")
-			
+
 			err = encoder.Encode(wollemiConfig)
 			if err != nil {
 				panic(err)
