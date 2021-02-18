@@ -1,6 +1,6 @@
 module github.com/sagikazarmark/please-go-modules
 
-go 1.14
+go 1.16
 
 require (
 	github.com/bazelbuild/buildtools v0.0.0-20200623222341-ce0cf814cb03

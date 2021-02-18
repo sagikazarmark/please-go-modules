@@ -1,7 +1,7 @@
-# Please output directory
-plz-out
-.plzconfig.local
-
 /bin/
 /.idea/
 /tmp/
+
+# Entries below this point are managed by Please (DO NOT EDIT)
+plz-out
+.plzconfig.local
