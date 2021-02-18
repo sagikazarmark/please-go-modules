@@ -3,6 +3,7 @@ version = 16.0.1
 
 [go]
 ImportPath = github.com/sagikazarmark/please-go-modules
+GoTool = //tools:go_toolchain|go
 GoTestRootCompat = True
 
 [buildconfig]
