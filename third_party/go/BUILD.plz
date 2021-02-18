@@ -1,0 +1,56 @@
+go_mod_download(
+    name = "github.com__bazelbuild__buildtools",
+    _tag = "download",
+    module = "github.com/bazelbuild/buildtools",
+    version = "v0.0.0-20200623222341-ce0cf814cb03",
+)
+
+go_module(
+    name = "github.com__bazelbuild__buildtools__build",
+    download = ":_github.com__bazelbuild__buildtools#download",
+    install = ["build"],
+    module = "github.com/bazelbuild/buildtools",
+    visibility = ["PUBLIC"],
+    deps = [":github.com__bazelbuild__buildtools__tables"],
+)
+
+go_module(
+    name = "github.com__bazelbuild__buildtools__tables",
+    download = ":_github.com__bazelbuild__buildtools#download",
+    install = ["tables"],
+    module = "github.com/bazelbuild/buildtools",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
+
+go_mod_download(
+    name = "github.com__scylladb__go-set",
+    _tag = "download",
+    module = "github.com/scylladb/go-set",
+    version = "v1.0.2",
+)
+
+go_module(
+    name = "github.com__scylladb__go-set__strset",
+    download = ":_github.com__scylladb__go-set#download",
+    install = ["strset"],
+    module = "github.com/scylladb/go-set",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
+
+go_mod_download(
+    name = "golang.org__x__tools",
+    _tag = "download",
+    module = "golang.org/x/tools",
+    version = "v0.0.0-20200708003708-134513de8882",
+)
+
+go_module(
+    name = "golang.org__x__tools__go__vcs",
+    download = ":_golang.org__x__tools#download",
+    install = ["go/vcs"],
+    module = "golang.org/x/tools",
+    visibility = ["PUBLIC"],
+    deps = [],
+)

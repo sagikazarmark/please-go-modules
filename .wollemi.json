@@ -1,0 +1,8 @@
+{
+    "known_dependency": {
+        "github.com/bazelbuild/buildtools/build": "//third_party/go:github.com__bazelbuild__buildtools__build",
+        "github.com/bazelbuild/buildtools/tables": "//third_party/go:github.com__bazelbuild__buildtools__tables",
+        "github.com/scylladb/go-set/strset": "//third_party/go:github.com__scylladb__go-set__strset",
+        "golang.org/x/tools/go/vcs": "//third_party/go:golang.org__x__tools__go__vcs"
+    }
+}

@@ -1,20 +1,21 @@
 [please]
-version = 15.14.0
+version = 15.16.0
 
 [parse]
-preloadbuilddefs = build_defs/binary.build_defs
-#preloadbuilddefs = build_defs/go_module.build_defs
+PreloadBuildDefs = build_defs/binary.build_defs
+#PreloadBuildDefs = build_defs/go_module.build_defs
 
 [go]
-importpath = github.com/sagikazarmark/please-go-modules
+ImportPath = github.com/sagikazarmark/please-go-modules
+GoTestRootCompat = True
 
 [buildconfig]
 gh-version = 1.0.0
 moddown-version = 0.3.1
 
-[alias "godeps"]
-desc = Generate third-party dependency rules for a Go project
-cmd = run //cmd/godeps -- -dir third_party/go -clean -subinclude "//build_defs"
+[alias "tidy"]
+desc = Tidy generates build targets for dependencies and makes sure that BUILD files are up-to-date.
+cmd = run //tools:plz-tidy
 
 [featureflags]
 PleaseGoInstall = true
