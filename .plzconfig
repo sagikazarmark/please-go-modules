@@ -5,6 +5,9 @@ version = 15.16.0
 PreloadBuildDefs = build_defs/binary.build_defs
 #PreloadBuildDefs = build_defs/go_module.build_defs
 
+[featureflags]
+PleaseGoInstall = true
+
 [go]
 ImportPath = github.com/sagikazarmark/please-go-modules
 GoTestRootCompat = True
@@ -16,6 +19,3 @@ moddown-version = 0.4.0
 [alias "tidy"]
 desc = Tidy generates build targets for dependencies and makes sure that BUILD files are up-to-date.
 cmd = run //tools:plz-tidy
-
-[featureflags]
-PleaseGoInstall = true
