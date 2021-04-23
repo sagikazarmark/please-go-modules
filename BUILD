@@ -9,7 +9,7 @@ moddown_binary(
 github_repo(
     name = "pleasings2",
     repo = "sagikazarmark/mypleasings",
-    revision = "3dea080ba8070af5a9dac6e382703f862e97a4f0",
+    revision = "09137dd3e633e2c4dc37f8b840e824a9ceb35d3e",
 )
 
 tarball(
