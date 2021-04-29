@@ -1,11 +1,3 @@
-subinclude("//build_defs")
-
-moddown_binary(
-    "moddown",
-    CONFIG.MODDOWN_VERSION,
-    visibility = ["PUBLIC"],
-)
-
 github_repo(
     name = "pleasings2",
     repo = "sagikazarmark/mypleasings",
@@ -16,10 +8,8 @@ tarball(
     name = "artifact",
     srcs = [
         "README.md",
-        "//build_defs:dist",
         "//cmd/godeps",
         "//dist:build_file",
-        "//dist:moddown",
     ],
     out = f"godeps_{CONFIG.OS}_{CONFIG.ARCH}.tar.gz",
     gzip = True,

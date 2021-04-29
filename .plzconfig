@@ -1,10 +1,6 @@
 [please]
 version = 16.0.0
 
-[parse]
-PreloadBuildDefs = build_defs/binary.build_defs
-#PreloadBuildDefs = build_defs/go_module.build_defs
-
 [go]
 ImportPath = github.com/sagikazarmark/please-go-modules
 GoTestRootCompat = True
