@@ -34,7 +34,7 @@ Add the following to you `tools/BUILD` file:
 ```
 remote_file(
     name = "godeps",
-    url = f"https://github.com/sagikazarmark/please-go-modules/releases/download/vREPLACE_VERSION/godeps_{CONFIG.HOSTOS}_{CONFIG.HOSTARCH}.tar.gz",
+    url = f"https://github.com/sagikazarmark/please-go-modules/releases/download/REPLACE_VERSION/godeps_{CONFIG.HOSTOS}_{CONFIG.HOSTARCH}.tar.gz",
     hashes = [
 REPLACE_HASHES    ],
     extract = True,

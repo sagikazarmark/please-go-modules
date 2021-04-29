@@ -30,6 +30,6 @@ jobs:
         uses: sagikazarmark/setup-please-action@v0
 
       - name: Publish
-        run: plz run //:publish -- ${GITHUB_REF#refs/tags/}
+        run: GIT_TAG=${GITHUB_REF#refs/tags/} plz run //:publish -- ${GITHUB_REF#refs/tags/}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
