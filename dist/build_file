@@ -1,21 +1,6 @@
-filegroup(
-    name = "build_defs",
-    srcs = [
-        "go_module.build_defs",
-    ],
-    visibility = ["PUBLIC"],
-)
-
 export_file(
     name = "godeps",
     src = "godeps",
-    visibility = ["PUBLIC"],
-    binary = True,
-)
-
-export_file(
-    name = "moddown",
-    src = "moddown",
     visibility = ["PUBLIC"],
     binary = True,
 )

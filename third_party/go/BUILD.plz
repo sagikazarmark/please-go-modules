@@ -38,19 +38,3 @@ go_module(
     visibility = ["PUBLIC"],
     deps = [],
 )
-
-go_mod_download(
-    name = "golang.org__x__tools",
-    _tag = "download",
-    module = "golang.org/x/tools",
-    version = "v0.0.0-20200708003708-134513de8882",
-)
-
-go_module(
-    name = "golang.org__x__tools__go__vcs",
-    download = ":_golang.org__x__tools#download",
-    install = ["go/vcs"],
-    module = "golang.org/x/tools",
-    visibility = ["PUBLIC"],
-    deps = [],
-)
