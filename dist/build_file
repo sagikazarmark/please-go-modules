@@ -1,6 +1,0 @@
-export_file(
-    name = "godeps",
-    src = "godeps",
-    visibility = ["PUBLIC"],
-    binary = True,
-)

@@ -9,7 +9,6 @@ tarball(
     srcs = [
         "README.md",
         "//cmd/godeps",
-        "//dist:build_file",
     ],
     out = f"godeps_{CONFIG.OS}_{CONFIG.ARCH}.tar.gz",
     gzip = True,
@@ -27,10 +26,42 @@ build_artifacts(
     labels = ["manual"],
 )
 
+text_file(
+    name = "release_notes_template",
+    content = """
+Add the following to you `tools/BUILD` file:
+
+```
+remote_file(
+    name = "godeps",
+    url = f"https://github.com/sagikazarmark/please-go-modules/releases/download/vREPLACE_VERSION/godeps_{CONFIG.HOSTOS}_{CONFIG.HOSTARCH}.tar.gz",
+    hashes = [
+REPLACE_HASHES    ],
+    extract = True,
+    exported_files = ["godeps"],
+    binary = True,
+)
+```
+"""
+)
+
+genrule(
+    name = "release_notes",
+    srcs = [":release_notes_template"],
+    deps = [":artifacts"],
+    cmd = [
+        "export HASHES=$(cat checksums.txt | cut -f1 -d' ' | sed 's/\(.*\)/        \"\\1\",/g' | tr '\\n' '|')",
+        "sed \"s/REPLACE_HASHES/$HASHES/g; s/REPLACE_VERSION/$GIT_TAG/g\" \"$SRCS\" | tr '|' '\\n' > \"$OUTS\"",
+    ],
+    pass_env = ["GIT_TAG"],
+    outs = ["release_notes"],
+)
+
 subinclude("///pleasings2//github")
 
 github_release(
     name = "publish",
     assets = [":artifacts"],
+    notes = ":release_notes",
     labels = ["manual"],
 )
