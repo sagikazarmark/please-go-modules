@@ -7,7 +7,6 @@ GoTestRootCompat = True
 
 [buildconfig]
 gh-version = 1.9.2
-moddown-version = 0.4.0
 
 [alias "tidy"]
 desc = Tidy generates build targets for dependencies and makes sure that BUILD files are up-to-date.
