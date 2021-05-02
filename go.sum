@@ -1,7 +1,5 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/bazelbuild/buildtools v0.0.0-20200623222341-ce0cf814cb03 h1:LRSVAUotW3P6B9fWl+r7qTBE7IUMKyn+YvtmSE1L5DM=
-github.com/bazelbuild/buildtools v0.0.0-20200623222341-ce0cf814cb03/go.mod h1:5JP0TXzWDHXv8qvxRC4InIazwdyDseBDbzESUMKk1yU=
 github.com/bazelbuild/buildtools v0.0.0-20210408102303-2b0a1af1a898 h1:V8cZmvXo+hTRtwbaMUOAJoU4ZYBF/tS2wzwx+ywWV1E=
 github.com/bazelbuild/buildtools v0.0.0-20210408102303-2b0a1af1a898/go.mod h1:689QdV3hBP7Vo9dJMmzhoYIyo/9iMhEmHkJcnaPRCbo=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
