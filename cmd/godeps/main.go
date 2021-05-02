@@ -28,6 +28,7 @@ var (
 	builtin    = flag.Bool("builtin", false, "Use builtin go_module support. For now, builtin dumps all rules in a single file.")
 	wollemi    = flag.Bool("wollemi", false, "Generate wollemi config with known dependencies.")
 	arm        = flag.Bool("arm", false, "Add ARM to the supported architectures.")
+	noExpand   = flag.Bool("noexpand", false, "Do not expand modules into packages")
 )
 
 func main() {
@@ -91,7 +92,7 @@ func main() {
 	var filePaths []string
 	var knownDependencies map[string]string
 
-	file, generateOsConfig, knownDeps := generateBuiltinBuildFiles(moduleList, ruleDir)
+	file, generateOsConfig, knownDeps := generateBuiltinBuildFiles(moduleList, ruleDir, *noExpand)
 
 	if generateOsConfig {
 		file.Stmt = append(generateOsConfigExprs(""), file.Stmt...)
@@ -317,6 +318,34 @@ func platformSourceFileRule(
 	})
 
 	return rule
+}
+
+func platformExpr(common []string, platform map[string][]string, formatter func(string) string) buildify.Expr {
+	if formatter == nil {
+		formatter = func(s string) string {
+			return s
+		}
+	}
+
+	newCommon := make([]string, 0, len(common))
+
+	for _, v := range common {
+		newCommon = append(newCommon, formatter(v))
+	}
+
+	newPlatform := make(map[string][]string, len(platform))
+
+	for platform, list := range platform {
+		newList := make([]string, 0, len(list))
+
+		for _, v := range list {
+			newList = append(newList, formatter(v))
+		}
+
+		newPlatform[platform] = newList
+	}
+
+	return platformList(newCommon, newPlatform)
 }
 
 func platformDepExpr(ruleDir string, common []string, platform map[string][]string) buildify.Expr {
