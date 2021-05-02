@@ -3,6 +3,16 @@
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/sagikazarmark/please-go-modules/CI?style=flat-square)](https://github.com/sagikazarmark/please-go-modules/actions?query=workflow%3ACI)
 ![Please Version](https://img.shields.io/badge/please%20version-%3E=16.0.1-B879FF.svg?style=flat-square)
 
+**Generate Please `go_module` targets from your `go.mod` file.**
+
+
+## Introduction
+
+Please added official Go modules support in v16. However, it still requires you to manually write `go_module` targets.
+For large projects, that can be a heavy task.
+
+This project helps with that task, by automatically generating a `third_party/go/BUILD.plz` file containing all modules required for your project.
+
 
 ## Usage
 
