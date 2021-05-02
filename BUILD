@@ -42,19 +42,19 @@ REPLACE_HASHES    ],
     binary = True,
 )
 ```
-"""
+""",
 )
 
 genrule(
     name = "release_notes",
     srcs = [":release_notes_template"],
-    deps = [":artifacts"],
+    outs = ["release_notes"],
     cmd = [
-        "export HASHES=$(cat checksums.txt | cut -f1 -d' ' | sed 's/\(.*\)/        \"\\1\",/g' | tr '\\n' '|')",
+        "export HASHES=$(cat checksums.txt | cut -f1 -d' ' | sed 's/\\(.*\\)/        \"\\1\",/g' | tr '\\n' '|')",
         "sed \"s/REPLACE_HASHES/$HASHES/g; s/REPLACE_VERSION/$GIT_TAG/g\" \"$SRCS\" | tr '|' '\\n' > \"$OUTS\"",
     ],
     pass_env = ["GIT_TAG"],
-    outs = ["release_notes"],
+    deps = [":artifacts"],
 )
 
 subinclude("///pleasings2//github")
@@ -62,6 +62,6 @@ subinclude("///pleasings2//github")
 github_release(
     name = "publish",
     assets = [":artifacts"],
-    notes = ":release_notes",
     labels = ["manual"],
+    notes = ":release_notes",
 )
