@@ -1,19 +1,22 @@
 # Please Go Modules rule generator
 
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/sagikazarmark/please-go-modules/CI?style=flat-square)](https://github.com/sagikazarmark/please-go-modules/actions?query=workflow%3ACI)
-![Please Version](https://img.shields.io/badge/please%20version-%3E=16.0.0-B879FF.svg?style=flat-square)
+![Please Version](https://img.shields.io/badge/please%20version-%3E=16.0.1-B879FF.svg?style=flat-square)
 
 
 ## Usage
 
 ### Generate `BUILD` file from `go.mod`
 
-Add the following snippet to your `BUILD` file in the root of your repository:
+Add the following snippet to your `tools/BUILD` file in the root of your repository:
 
 ```starlark
-http_archive(
-    name = "pleasegomod",
-    urls = [f"https://github.com/sagikazarmark/please-go-modules/releases/download/v0.0.19/godeps_{CONFIG.HOSTOS}_{CONFIG.HOSTARCH}.tar.gz"],
+remote_file(
+    name = "godeps",
+    url = f"https://github.com/sagikazarmark/please-go-modules/releases/latest/download/godeps_{CONFIG.HOSTOS}_{CONFIG.HOSTARCH}.tar.gz",
+    extract = True,
+    exported_files = ["godeps"],
+    binary = True,
 )
 ```
 
@@ -21,11 +24,11 @@ Add the following snippet to your `.plzconfig`:
 
 ```
 [please]
-version = 16.0.0
+version = 16.0.1
 
 [alias "godeps"]
 desc = Generate third-party dependency rules for a Go project
-cmd = run ///pleasegomod//:godeps -- -dir third_party/go -clean -builtin
+cmd = run //tools:godeps -- -dir third_party/go -clean -builtin
 ```
 
 Run the following:
@@ -42,44 +45,39 @@ The above command will generate build targets in `third_party/go` for your third
 You can combine the above with [wollemi](https://github.com/tcncloud/wollemi) that can generate/update
 `BUILD` files in your project to use third-party dependencies.
 
-Add the following to the `BUILD` file in the project root:
+Add the following content to your `tools/BUILD` file:
 
 ```starlark
-github_repo(
-    name = "pleasings2",
-    repo = "sagikazarmark/mypleasings",
-    revision = "f644350aab5e0090ab69022beeb2feadfcdc223e",
+go_toolchain(
+    name = "go_toolchain",
+    version = "1.16.3",
 )
-```
 
-Then create a `tools/BUILD` file with the following content:
-
-```starlark
-subinclude("///pleasings2//go:tools")
-
-# Copied here from https://github.com/sagikazarmark/mypleasings/blob/27b6451ea99d160aec03f242be5261978770b4e1/tools/go/BUILD
-# Custom go toolchain doesn't work with subrepos: https://github.com/thought-machine/please/issues/1547
-wollemi_wrapper(
-    name = "wollemi-wrapper",
-    binary = "///pleasings2//tools/go:wollemi",
-    labels = ["go"],
-    visibility = ["PUBLIC"],
+WOLLEMI_VERSION = "v0.7.0"
+remote_file(
+    name = "wollemi",
+    url = f"https://github.com/tcncloud/wollemi/releases/download/{WOLLEMI_VERSION}/wollemi-{WOLLEMI_VERSION}-{CONFIG.HOSTOS}-{CONFIG.HOSTARCH}.tar.gz",
+    extract = True,
+    exported_files = ["wollemi"],
+    binary = True,
 )
 
 sh_cmd(
     name = "plz-tidy",
     cmd = [
-        "$(out_exe ///pleasegomod//:godeps) -dir third_party/go -clean -builtin -wollemi",
-        "$(out_exe :wollemi-wrapper) gofmt ./...",
+        "export GOROOT=\\\\$($(out_exe :go_toolchain|go) env GOROOT)",
+        "$(out_exe :godeps) -dir third_party/go -clean -builtin -wollemi",
+        "$(out_exe :wollemi) gofmt ./...",
     ],
     deps = [
-        "///pleasegomod//:godeps",
-        ":wollemi-wrapper",
+        ":godeps",
+        ":wollemi",
+        ":go_toolchain",
     ],
 )
 ```
 
-(**Note:** the wollemi command might not work perfectly with Go submodules. You need to run wollemi for each module separately)
+**Note:** You can remove any references to `go_toolchain` if you want to use Go installed on your system.
 
 Finally, add an alias:
 
@@ -88,3 +86,11 @@ Finally, add an alias:
 desc = Tidy generates build targets for dependencies and makes sure that BUILD files are up-to-date.
 cmd = run //tools:plz-tidy
 ```
+
+and run:
+
+```bash
+plz tidy
+```
+
+**Note:** the wollemi command might not work perfectly with Go submodules. You need to run wollemi for each module separately.
