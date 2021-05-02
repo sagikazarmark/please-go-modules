@@ -1,5 +1,17 @@
 subinclude("///pleasings2//go:tools")
 
+go_toolchain(
+    name = "go_toolchain",
+    version = "1.16.3",
+    architectures = [
+        "linux_amd64",
+        "linux_arm64",
+        "darwin_amd64",
+        "darwin_arm64",
+    ],
+    strip_srcs = True,
+)
+
 # Copied here from https://github.com/sagikazarmark/mypleasings/blob/27b6451ea99d160aec03f242be5261978770b4e1/tools/go/BUILD
 # Custom go toolchain doesn't work with subrepos: https://github.com/thought-machine/please/issues/1547
 wollemi_wrapper(
