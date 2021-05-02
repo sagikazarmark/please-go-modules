@@ -7,6 +7,8 @@ GoTool = //tools:go_toolchain|go
 GoTestRootCompat = True
 
 [buildconfig]
+go-version = 1.16.3
+wollemi-version = 0.7.0
 gh-version = 1.9.2
 
 [alias "tidy"]

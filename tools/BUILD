@@ -1,34 +1,30 @@
-subinclude("///pleasings2//go:tools")
-
 go_toolchain(
     name = "go_toolchain",
-    version = "1.16.3",
+    version = CONFIG.GO_VERSION,
     architectures = [
         "linux_amd64",
-        "linux_arm64",
         "darwin_amd64",
-        "darwin_arm64",
     ],
-    strip_srcs = True,
 )
 
-# Copied here from https://github.com/sagikazarmark/mypleasings/blob/27b6451ea99d160aec03f242be5261978770b4e1/tools/go/BUILD
-# Custom go toolchain doesn't work with subrepos: https://github.com/thought-machine/please/issues/1547
-wollemi_wrapper(
-    name = "wollemi-wrapper",
-    binary = "///pleasings2//tools/go:wollemi",
-    labels = ["go"],
-    visibility = ["PUBLIC"],
+remote_file(
+    name = "wollemi",
+    url = f"https://github.com/tcncloud/wollemi/releases/download/v{CONFIG.WOLLEMI_VERSION}/wollemi-v{CONFIG.WOLLEMI_VERSION}-{CONFIG.HOSTOS}-{CONFIG.HOSTARCH}.tar.gz",
+    extract = True,
+    exported_files = ["wollemi"],
+    binary = True,
 )
 
 sh_cmd(
     name = "plz-tidy",
     cmd = [
+        "export GOROOT=\\\\$($(out_exe :go_toolchain|go) env GOROOT)",
         "$(out_exe //cmd/godeps) -dir third_party/go -clean -builtin -wollemi",
-        "$(out_exe :wollemi-wrapper) gofmt ./...",
+        "$(out_exe :wollemi) gofmt ./...",
     ],
     deps = [
-        ":wollemi-wrapper",
         "//cmd/godeps",
+        ":wollemi",
+        ":go_toolchain",
     ],
 )
