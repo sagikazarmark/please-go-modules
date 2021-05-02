@@ -14,3 +14,7 @@ gh-version = 1.9.2
 [alias "tidy"]
 desc = Tidy generates build targets for dependencies and makes sure that BUILD files are up-to-date.
 cmd = run //tools:plz-tidy
+
+[alias "go"]
+desc = Run go commands.
+cmd = run --in_wd //tools:go_toolchain|go --
