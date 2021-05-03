@@ -247,6 +247,9 @@ func generateBuiltinBuildFiles(moduleList []depgraph.Module, ruleDir string, noE
 			commonDepsSet := strset.New()
 			perPlatformDepsSet := map[depgraph.Platform]*strset.Set{}
 
+			moduleAllPlatforms := false
+			modulePlatforms := map[depgraph.Platform]bool{}
+
 			for _, pkg := range module.Packages {
 				pkgName := strings.TrimPrefix(pkg.ImportPath, module.Path+"/")
 				if pkg.ImportPath == module.Path {
@@ -259,11 +262,15 @@ func generateBuiltinBuildFiles(moduleList []depgraph.Module, ruleDir string, noE
 					for _, platform := range pkg.Platforms {
 						if perPlatformPkgsSet[platform] == nil {
 							perPlatformPkgsSet[platform] = strset.New()
+
+							modulePlatforms[platform] = true
 						}
 
 						perPlatformPkgsSet[platform].Add(pkgName)
 					}
 				} else {
+					moduleAllPlatforms = true
+
 					commonPkgsSet.Add(pkgName)
 
 					for _, importPath := range pkg.Imports.Common {
@@ -274,6 +281,8 @@ func generateBuiltinBuildFiles(moduleList []depgraph.Module, ruleDir string, noE
 				}
 
 				for platform, imports := range pkg.Imports.PerPlatform {
+					generateOsConfig = true
+
 					if perPlatformDepsSet[platform] == nil {
 						perPlatformDepsSet[platform] = strset.New()
 					}
@@ -331,7 +340,41 @@ func generateBuiltinBuildFiles(moduleList []depgraph.Module, ruleDir string, noE
 				RHS: depExpr,
 			})
 
-			file.Stmt = append(file.Stmt, rule)
+			var stmt buildify.Expr = rule
+
+			if !moduleAllPlatforms {
+				generateOsConfig = true
+
+				var os, arch []string
+				for p := range modulePlatforms {
+					os = append(os, p.OS)
+					arch = append(arch, p.Arch)
+				}
+
+				os = uniqueStrings(os)
+				arch = uniqueStrings(arch)
+
+				stmt = &buildify.IfStmt{
+					Cond: &buildify.CallExpr{
+						X: &buildify.Ident{Name: "is_platform"},
+						List: []buildify.Expr{
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "os"},
+								Op:  "=",
+								RHS: stringListExpr(os),
+							},
+							&buildify.AssignExpr{
+								LHS: &buildify.Ident{Name: "arch"},
+								Op:  "=",
+								RHS: stringListExpr(arch),
+							},
+						},
+					},
+					True: []buildify.Expr{rule},
+				}
+			}
+
+			file.Stmt = append(file.Stmt, stmt)
 		}
 	}
 

@@ -127,21 +127,11 @@ go_module(
     deps = [],
 )
 
-go_module(
-    name = "github.com__sirupsen__logrus",
-    install = select({
-        ":__config_linux_amd64": ["."],
-        "default": [],
-    }),
-    module = "github.com/sirupsen/logrus",
-    version = "v1.7.0",
-    visibility = ["PUBLIC"],
-    deps = select({
-        ":__config_darwin_amd64": [],
-        ":__config_linux_amd64": [":golang.org__x__sys"],
-        "default": [],
-    }),
-)
+if is_platform(
+    arch = ["amd64"],
+    os = ["linux"],
+):
+    go_module(name = "github.com__sirupsen__logrus", install = select({":__config_linux_amd64": ["."], "default": []}), module = "github.com/sirupsen/logrus", version = "v1.7.0", visibility = ["PUBLIC"], deps = select({":__config_darwin_amd64": [], ":__config_linux_amd64": [":golang.org__x__sys"], "default": []}))
 
 go_module(
     name = "github.com__stretchr__testify",
