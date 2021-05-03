@@ -33,6 +33,8 @@ type Module struct {
 	Sum     string
 
 	Packages []Package2
+
+	pkgIndex map[string]bool
 }
 
 // SourcePath returns the module path that contains the source for this module.
@@ -43,6 +45,13 @@ func (m Module) SourcePath() string {
 	}
 
 	return m.Path
+}
+
+// BelongsTo checks if an import path belongs to this module.
+func (m Module) BelongsTo(importPath string) bool {
+	_, ok := m.pkgIndex[importPath]
+
+	return ok
 }
 
 // Package is a Go package with information for building the package on all supported platforms.
@@ -98,6 +107,8 @@ type Package2 struct {
 	// Platform information
 	Platforms    []Platform
 	allPlatforms bool
+
+	Module Module
 }
 
 // IsASM determines whether the package contains any assembly code.
@@ -195,6 +206,8 @@ func CalculateDepGraph(rootModule string, packageLists []GoPackageList, sums sum
 				module = Module{
 					Path:    pkg.Module.Path,
 					Version: pkg.Module.Version,
+
+					pkgIndex: map[string]bool{},
 				}
 
 				if pkg.Module.Replace != nil {
@@ -278,6 +291,7 @@ func CalculateDepGraph(rootModule string, packageLists []GoPackageList, sums sum
 		module := modules[pkgToModule[packageToProcess]]
 
 		module.Packages = append(module.Packages, pkg)
+		module.pkgIndex[pkg.ImportPath] = true
 
 		modules[pkgToModule[packageToProcess]] = module
 	}

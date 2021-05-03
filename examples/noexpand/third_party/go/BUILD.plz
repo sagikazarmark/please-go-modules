@@ -1,0 +1,340 @@
+config_setting(
+    name = "__config_linux_amd64",
+    values = {
+        "os": "linux",
+        "cpu": "amd64",
+    },
+)
+
+config_setting(
+    name = "__config_darwin_amd64",
+    values = {
+        "os": "darwin",
+        "cpu": "amd64",
+    },
+)
+
+go_module(
+    name = "emperror.dev__errors",
+    install = [
+        ".",
+        "match",
+    ],
+    module = "emperror.dev/errors",
+    version = "v0.8.0",
+    visibility = ["PUBLIC"],
+    deps = [
+        ":github.com__pkg__errors",
+        ":go.uber.org__multierr",
+    ],
+)
+
+go_module(
+    name = "github.com__containerd__containerd",
+    install = [
+        "pkg/userns",
+        "sys",
+    ] + select({
+        ":__config_linux_amd64": ["log"],
+        "default": [],
+    }),
+    module = "github.com/containerd/containerd",
+    version = "v1.5.0-rc.3",
+    visibility = ["PUBLIC"],
+    deps = [
+        ":github.com__pkg__errors",
+        ":golang.org__x__sys",
+    ] + select({
+        ":__config_darwin_amd64": [],
+        ":__config_linux_amd64": [":github.com__sirupsen__logrus"],
+        "default": [],
+    }),
+)
+
+go_module(
+    name = "github.com__davecgh__go-spew",
+    install = ["spew"],
+    module = "github.com/davecgh/go-spew",
+    version = "v1.1.1",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
+
+go_module(
+    name = "github.com__golang__protobuf",
+    install = [
+        "proto",
+        "ptypes",
+        "ptypes/any",
+        "ptypes/duration",
+        "ptypes/timestamp",
+    ],
+    module = "github.com/golang/protobuf",
+    version = "v1.4.3",
+    visibility = ["PUBLIC"],
+    deps = [":google.golang.org__protobuf"],
+)
+
+go_module(
+    name = "github.com__golang__snappy",
+    install = ["."],
+    module = "github.com/golang/snappy",
+    version = "v0.0.3",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
+
+go_module(
+    name = "github.com__mattn__go-sqlite3",
+    install = ["."],
+    module = "github.com/mattn/go-sqlite3",
+    version = "v1.14.7",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
+
+go_module(
+    name = "github.com__opencontainers__runc",
+    install = [
+        "libcontainer/system",
+        "libcontainer/user",
+    ],
+    module = "github.com/opencontainers/runc",
+    version = "v1.0.0-rc93",
+    visibility = ["PUBLIC"],
+    deps = [":golang.org__x__sys"] + select({
+        ":__config_darwin_amd64": [],
+        ":__config_linux_amd64": [":golang.org__x__sys"],
+        "default": [],
+    }),
+)
+
+go_module(
+    name = "github.com__pkg__errors",
+    install = ["."],
+    module = "github.com/pkg/errors",
+    version = "v0.9.1",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
+
+go_module(
+    name = "github.com__pmezard__go-difflib",
+    install = ["difflib"],
+    module = "github.com/pmezard/go-difflib",
+    version = "v1.0.0",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
+
+go_module(
+    name = "github.com__sirupsen__logrus",
+    install = select({
+        ":__config_linux_amd64": ["."],
+        "default": [],
+    }),
+    module = "github.com/sirupsen/logrus",
+    version = "v1.7.0",
+    visibility = ["PUBLIC"],
+    deps = select({
+        ":__config_darwin_amd64": [],
+        ":__config_linux_amd64": [":golang.org__x__sys"],
+        "default": [],
+    }),
+)
+
+go_module(
+    name = "github.com__stretchr__testify",
+    install = ["assert"],
+    module = "github.com/stretchr/testify",
+    version = "v1.6.1",
+    visibility = ["PUBLIC"],
+    deps = [
+        ":github.com__davecgh__go-spew",
+        ":github.com__pmezard__go-difflib",
+        ":gopkg.in__yaml.v3",
+    ],
+)
+
+go_module(
+    name = "go.uber.org__atomic",
+    install = ["."],
+    module = "go.uber.org/atomic",
+    version = "v1.7.0",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
+
+go_module(
+    name = "go.uber.org__multierr",
+    install = ["."],
+    module = "go.uber.org/multierr",
+    version = "v1.6.0",
+    visibility = ["PUBLIC"],
+    deps = [":go.uber.org__atomic"],
+)
+
+go_module(
+    name = "golang.org__x__net",
+    install = [
+        "http/httpguts",
+        "http2",
+        "http2/hpack",
+        "idna",
+        "internal/timeseries",
+        "trace",
+    ],
+    module = "golang.org/x/net",
+    version = "v0.0.0-20210226172049-e18ecbb05110",
+    visibility = ["PUBLIC"],
+    deps = [":golang.org__x__text"],
+)
+
+go_module(
+    name = "golang.org__x__sys",
+    install = [
+        "internal/unsafeheader",
+        "unix",
+    ],
+    module = "golang.org/x/sys",
+    version = "v0.0.0-20210426230700-d19ff857e887",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
+
+go_module(
+    name = "golang.org__x__text",
+    install = [
+        "secure/bidirule",
+        "transform",
+        "unicode/bidi",
+        "unicode/norm",
+    ],
+    module = "golang.org/x/text",
+    version = "v0.3.4",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
+
+go_module(
+    name = "google.golang.org__genproto",
+    install = ["googleapis/rpc/status"],
+    module = "google.golang.org/genproto",
+    version = "v0.0.0-20201110150050-8816d57aaa9a",
+    visibility = ["PUBLIC"],
+    deps = [
+        ":github.com__golang__protobuf",
+        ":google.golang.org__protobuf",
+    ],
+)
+
+go_module(
+    name = "google.golang.org__grpc",
+    install = [
+        ".",
+        "attributes",
+        "backoff",
+        "balancer",
+        "balancer/base",
+        "balancer/grpclb/state",
+        "balancer/roundrobin",
+        "binarylog/grpc_binarylog_v1",
+        "codes",
+        "connectivity",
+        "credentials",
+        "encoding",
+        "encoding/proto",
+        "grpclog",
+        "internal",
+        "internal/backoff",
+        "internal/balancerload",
+        "internal/binarylog",
+        "internal/buffer",
+        "internal/channelz",
+        "internal/credentials",
+        "internal/envconfig",
+        "internal/grpclog",
+        "internal/grpcrand",
+        "internal/grpcsync",
+        "internal/grpcutil",
+        "internal/metadata",
+        "internal/resolver",
+        "internal/resolver/dns",
+        "internal/resolver/passthrough",
+        "internal/resolver/unix",
+        "internal/serviceconfig",
+        "internal/status",
+        "internal/syscall",
+        "internal/transport",
+        "internal/transport/networktype",
+        "keepalive",
+        "metadata",
+        "peer",
+        "resolver",
+        "serviceconfig",
+        "stats",
+        "status",
+        "tap",
+    ],
+    module = "google.golang.org/grpc",
+    version = "v1.37.0",
+    visibility = ["PUBLIC"],
+    deps = [
+        ":github.com__golang__protobuf",
+        ":golang.org__x__net",
+        ":google.golang.org__genproto",
+        ":google.golang.org__protobuf",
+    ] + select({
+        ":__config_darwin_amd64": [],
+        ":__config_linux_amd64": [":golang.org__x__sys"],
+        "default": [],
+    }),
+)
+
+go_module(
+    name = "google.golang.org__protobuf",
+    install = [
+        "encoding/prototext",
+        "encoding/protowire",
+        "internal/descfmt",
+        "internal/descopts",
+        "internal/detrand",
+        "internal/encoding/defval",
+        "internal/encoding/messageset",
+        "internal/encoding/tag",
+        "internal/encoding/text",
+        "internal/errors",
+        "internal/fieldsort",
+        "internal/filedesc",
+        "internal/filetype",
+        "internal/flags",
+        "internal/genid",
+        "internal/impl",
+        "internal/mapsort",
+        "internal/pragma",
+        "internal/set",
+        "internal/strs",
+        "internal/version",
+        "proto",
+        "reflect/protoreflect",
+        "reflect/protoregistry",
+        "runtime/protoiface",
+        "runtime/protoimpl",
+        "types/known/anypb",
+        "types/known/durationpb",
+        "types/known/timestamppb",
+    ],
+    module = "google.golang.org/protobuf",
+    version = "v1.25.0",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
+
+go_module(
+    name = "gopkg.in__yaml.v3",
+    install = ["."],
+    module = "gopkg.in/yaml.v3",
+    version = "v3.0.0-20200313102051-9f266ea9e77c",
+    visibility = ["PUBLIC"],
+    deps = [],
+)
