@@ -1,12 +1,6 @@
 go_binary(
     name = "godeps",
-    srcs = [
-        "generate.go",
-        "generate_builtin.go",
-        "main.go",
-        "os_config.go",
-        "platform.go",
-    ],
+    srcs = glob(["*.go"], exclude = ["*_test.go"]),
     visibility = ["PUBLIC"],
     deps = [
         "//pkg/depgraph",

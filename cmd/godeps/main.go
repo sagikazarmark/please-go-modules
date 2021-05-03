@@ -91,58 +91,17 @@ func main() {
 	var filePaths []string
 	var knownDependencies map[string]string
 
-	if *builtin {
-		file, generateOsConfig, knownDeps := generateBuiltinBuildFiles(moduleList, ruleDir)
+	file, generateOsConfig, knownDeps := generateBuiltinBuildFiles(moduleList, ruleDir)
 
-		if generateOsConfig {
-			file.Stmt = append(generateOsConfigExprs(""), file.Stmt...)
-		}
-
-		buildFiles = map[string]*buildify.File{
-			"": file,
-		}
-		filePaths = []string{""}
-		knownDependencies = knownDeps
-	} else {
-		var generateOsConfig bool
-
-		buildFiles, filePaths, generateOsConfig = generateBuildFiles(moduleList, ruleDir)
-
-		if generateOsConfig {
-			filePath := "__config"
-
-			// Get (and create) file
-			file, ok := buildFiles[filePath]
-			if !ok {
-				file = &buildify.File{
-					Path: filePath,
-					Type: buildify.TypeBuild,
-				}
-
-				if ruleDir != "" {
-					file.Stmt = append(file.Stmt, &buildify.CallExpr{
-						X: &buildify.Ident{Name: "package"},
-						List: []buildify.Expr{
-							&buildify.AssignExpr{
-								LHS: &buildify.Ident{Name: "default_visibility"},
-								Op:  "=",
-								RHS: &buildify.ListExpr{
-									List: []buildify.Expr{
-										&buildify.StringExpr{Value: "PUBLIC"},
-									},
-								},
-							},
-						},
-					})
-				}
-
-				filePaths = append(filePaths, filePath)
-				buildFiles[filePath] = file
-			}
-
-			file.Stmt = append(file.Stmt, generateOsConfigExprs(ruleDir)...)
-		}
+	if generateOsConfig {
+		file.Stmt = append(generateOsConfigExprs(""), file.Stmt...)
 	}
+
+	buildFiles = map[string]*buildify.File{
+		"": file,
+	}
+	filePaths = []string{""}
+	knownDependencies = knownDeps
 
 	sort.Strings(filePaths)
 
