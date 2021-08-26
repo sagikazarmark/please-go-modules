@@ -55,11 +55,12 @@ func main() {
 
 	for _, platform := range SupportedPlatforms {
 		options := golist.ListOptions{
-			Packages: []string{fmt.Sprintf("%s/...", rootModule)},
-			Deps:     true,
-			Test:     true,
-			OS:       platform.OS,
-			Arch:     platform.Arch,
+			Packages:       []string{fmt.Sprintf("%s/...", rootModule)},
+			Deps:           true,
+			Test:           true,
+			OS:             platform.OS,
+			Arch:           platform.Arch,
+			IgnoreNonFatal: true,
 		}
 
 		platformDeps, err := golist.List(options)

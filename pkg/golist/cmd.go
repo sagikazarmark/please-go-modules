@@ -58,11 +58,12 @@ func DepsWithoutTests(module string) ([]Package, error) {
 
 // ListOptions customizes a go list execution.
 type ListOptions struct {
-	Packages []string
-	Deps     bool
-	Test     bool
-	OS       string
-	Arch     string
+	Packages       []string
+	Deps           bool
+	Test           bool
+	IgnoreNonFatal bool
+	OS             string
+	Arch           string
 }
 
 // GetOS returns the OS defined in the options,
@@ -95,6 +96,10 @@ func List(options ListOptions) ([]Package, error) {
 
 	if options.Test {
 		args = append(args, "-test")
+	}
+
+	if options.IgnoreNonFatal {
+		args = append(args, "-e")
 	}
 
 	args = append(args, options.Packages...)
