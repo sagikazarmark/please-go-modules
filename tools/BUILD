@@ -3,6 +3,7 @@ go_toolchain(
     architectures = [
         "linux_amd64",
         "darwin_amd64",
+        "darwin_arm64",
     ],
     version = CONFIG.GO_VERSION,
 )

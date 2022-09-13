@@ -14,6 +14,14 @@ config_setting(
     },
 )
 
+config_setting(
+    name = "__config_darwin_arm64",
+    values = {
+        "os": "darwin",
+        "cpu": "arm64",
+    },
+)
+
 go_mod_download(
     name = "emperror.dev__errors",
     _tag = "download",
@@ -76,6 +84,7 @@ go_module(
         ":golang.org__x__sys__unix",
     ] + select({
         ":__config_darwin_amd64": [],
+        ":__config_darwin_arm64": [],
         ":__config_linux_amd64": [":github.com__containerd__containerd__log"],
         "default": [],
     }),

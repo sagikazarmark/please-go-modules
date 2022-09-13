@@ -22,6 +22,7 @@ build_artifacts(
     artifacts = [
         "@linux_amd64//:artifact",
         "@darwin_amd64//:artifact",
+        "@darwin_arm64//:artifact",
     ],
     labels = ["manual"],
 )
