@@ -1,7 +1,7 @@
 # Please Go Modules rule generator
 
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/sagikazarmark/please-go-modules/CI?style=flat-square)](https://github.com/sagikazarmark/please-go-modules/actions?query=workflow%3ACI)
-![Please Version](https://img.shields.io/badge/please%20version-%3E=16.0.1-B879FF.svg?style=flat-square)
+![Please Version](https://img.shields.io/badge/please%20version-%3E=16.22.0-B879FF.svg?style=flat-square)
 
 **Generate Please `go_module` targets from your `go.mod` file.**
 
@@ -34,7 +34,7 @@ Add the following snippet to your `.plzconfig`:
 
 ```
 [please]
-version = 16.0.1
+version = 16.22.0
 
 [alias "godeps"]
 desc = Generate third-party dependency rules for a Go project
@@ -63,7 +63,7 @@ go_toolchain(
     version = "1.16.3",
 )
 
-WOLLEMI_VERSION = "v0.7.0"
+WOLLEMI_VERSION = "v0.8.1"
 remote_file(
     name = "wollemi",
     url = f"https://github.com/tcncloud/wollemi/releases/download/{WOLLEMI_VERSION}/wollemi-{WOLLEMI_VERSION}-{CONFIG.HOSTOS}-{CONFIG.HOSTARCH}.tar.gz",
