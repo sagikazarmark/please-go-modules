@@ -63,11 +63,17 @@ jobs:
           name: godeps_linux_amd64.tar.gz
           path: plz-out/gen/godeps_linux_amd64.tar.gz
 
-      - name: Upload darwin artifact
+      - name: Upload darwin amd64 artifact
         uses: actions/upload-artifact@v1
         with:
           name: godeps_darwin_amd64.tar.gz
           path: plz-out/gen/godeps_darwin_amd64.tar.gz
+
+      - name: Upload darwin arm64 artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: godeps_darwin_arm64.tar.gz
+          path: plz-out/gen/godeps_darwin_arm64.tar.gz
 
       - name: Upload checksums
         uses: actions/upload-artifact@v1
