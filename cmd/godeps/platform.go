@@ -14,4 +14,5 @@ func (p Platform) String() string {
 var SupportedPlatforms = []Platform{
 	{"linux", "amd64"},
 	{"darwin", "amd64"},
+	{"darwin", "arm64"},
 }

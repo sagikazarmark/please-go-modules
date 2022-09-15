@@ -1,18 +1,19 @@
 go_toolchain(
     name = "go_toolchain",
-    version = CONFIG.GO_VERSION,
     architectures = [
         "linux_amd64",
         "darwin_amd64",
+        "darwin_arm64",
     ],
+    version = CONFIG.GO_VERSION,
 )
 
 remote_file(
     name = "wollemi",
-    url = f"https://github.com/tcncloud/wollemi/releases/download/v{CONFIG.WOLLEMI_VERSION}/wollemi-v{CONFIG.WOLLEMI_VERSION}-{CONFIG.HOSTOS}-{CONFIG.HOSTARCH}.tar.gz",
-    extract = True,
-    exported_files = ["wollemi"],
     binary = True,
+    exported_files = ["wollemi"],
+    extract = True,
+    url = f"https://github.com/tcncloud/wollemi/releases/download/v{CONFIG.WOLLEMI_VERSION}/wollemi-v{CONFIG.WOLLEMI_VERSION}-{CONFIG.HOSTOS}-{CONFIG.HOSTARCH}.tar.gz",
 )
 
 sh_cmd(
@@ -23,8 +24,8 @@ sh_cmd(
         "$(out_exe :wollemi) gofmt ./...",
     ],
     deps = [
-        "//cmd/godeps",
-        ":wollemi",
         ":go_toolchain",
+        ":wollemi",
+        "//cmd/godeps",
     ],
 )
